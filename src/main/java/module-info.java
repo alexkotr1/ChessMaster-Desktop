@@ -10,6 +10,7 @@ module com.example.chessgui {
     requires eu.hansolo.tilesfx;
     requires com.almasb.fxgl.all;
     requires java.desktop;
+    requires javafx.media;
 
     opens com.example.chessgui to javafx.fxml;
     exports com.example.chessgui;
