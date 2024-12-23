@@ -17,14 +17,14 @@ public class ChessEngine {
             System.out.println("It's not " + (chessBoard.getWhiteTurn() ? "black" : "white" + "'s turn"));
             return false;
         }
-        if (!p.isLegalMove(xDest,yDest) || (pioniAtDestination != null && pioniAtDestination.isWhite == p.isWhite)) {
+        if (!p.isLegalMove(xDest,yDest)) {
             System.out.println("Illegal move!");
             return false;
         }
         if (pioniAtDestination != null) chessBoard.capture(pioniAtDestination);
 
         chessBoard.move(xOrig,yOrig,xDest,yDest);
-        chessBoard.printBoard();
+        //chessBoard.printBoard();
         return true;
     }
 }

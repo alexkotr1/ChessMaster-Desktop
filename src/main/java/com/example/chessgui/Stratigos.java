@@ -16,9 +16,7 @@ public class Stratigos extends Pioni {
         int currentX = Utilities.char2Int(getXPos());
         int currentY = getYPos();
         ArrayList<int[]> route = getRoute(currentX,currentY,destX,y);
-        System.out.println("Dest X: " + destX + " DestY: " + y);
-        Pioni.printRoute(route);
-        return (route != null && !route.isEmpty() && route.getLast()[0] == destX && route.getLast()[1] == y);
+        return (route != null && !route.isEmpty() && route.getLast()[0] == destX && route.getLast()[1] == y) && (this.chessBoard.getPioniAt(x,y) == null || this.chessBoard.getPioniAt(x,y).getIsWhite() != getIsWhite());
 
     }
 

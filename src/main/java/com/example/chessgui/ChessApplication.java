@@ -2,6 +2,8 @@ package com.example.chessgui;
 
 import javafx.application.Application;
 import javafx.scene.Scene;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -19,8 +21,9 @@ import javax.sound.sampled.Clip;
 import javax.sound.sampled.LineEvent;
 import java.io.BufferedInputStream;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.lang.reflect.Array;
+import java.util.*;
+import java.util.stream.Collectors;
 
 
 public class ChessApplication extends Application {
@@ -30,15 +33,18 @@ public class ChessApplication extends Application {
     private final DropShadow turnEffect = new DropShadow();
     private final DropShadow kingCheckEffect = new DropShadow();
     private ChessEngine chessEngine;
-    private boolean whiteKingThreatened = false;
-    private boolean blackKingThreatened = false;
+    private final HashMap<Pioni,int[]> legalMovesWhenKingThreatened = new HashMap<>();
     HashMap<String,ImageView> possibleMoveIndicators = new HashMap<>();
     ArrayList<int[]> allPositions = new ArrayList<>();
+    Stage stage;
+    AnchorPane root;
     public ChessApplication() {}
 
     @Override
     public void start(Stage stage) {
+        this.stage = stage;
         AnchorPane root = new AnchorPane();
+        this.root = root;
         stage.setHeight(800);
         stage.setWidth(800);
 
@@ -102,15 +108,17 @@ public class ChessApplication extends Application {
                 piece.setEffect(null);
                 piece.setLayoutX(event.getSceneX() - mouseX);
                 piece.setLayoutY(event.getSceneY() - mouseY);
-                for (int[] dest : allPositions) {
-                    char destX = Utilities.int2Char(dest[0]);
-                    int  destY = dest[1];
-                    boolean res = p.isLegalMove(destX, destY);
-                    Pioni destPioni = chessEngine.chessBoard.getPioniAt(destX,destY);
-                    if (res) {
-                        if (destPioni == null || destPioni.getIsWhite() != p.getIsWhite()) {
-                            possibleMoveIndicators.get(String.valueOf(destX) + destY).setVisible(true);
-                        }
+                System.out.println(legalMovesWhenKingThreatened);
+                if (!legalMovesWhenKingThreatened.isEmpty()){
+                    if (legalMovesWhenKingThreatened.get(p) == null) return;
+                    int[] dest = legalMovesWhenKingThreatened.get(p);
+                    possibleMoveIndicators.get(String.valueOf(Utilities.int2Char(dest[0])) + dest[1]).setVisible(true);
+                } else {
+                    for (int[] dest : allPositions) {
+                        char destX = Utilities.int2Char(dest[0]);
+                        int  destY = dest[1];
+                        boolean res = p.isLegalMove(destX, destY);
+                        if (res) possibleMoveIndicators.get(String.valueOf(destX) + destY).setVisible(true);
                     }
                 }
             }
@@ -123,6 +131,16 @@ public class ChessApplication extends Application {
                 int[] position = coordinatesToPosition((int) (event.getSceneX() - mouseX), (int) (event.getSceneY() - mouseY));
                 char posX = Utilities.int2Char(position[0]);
                 int posY = position[1];
+                if (!legalMovesWhenKingThreatened.isEmpty()){
+                    int[] desiredMove = legalMovesWhenKingThreatened.get(p);
+                    if (desiredMove == null || desiredMove[0] != position[0] || desiredMove[1] != position[1]) {
+                        int[] orig = getCoordinates(p.getXPos(), p.getYPos());
+                        piece.setLayoutX(orig[0] - piece.getFitWidth() / 2);
+                        piece.setLayoutY(orig[1] - piece.getFitHeight() / 2);
+                        piece.setEffect(turnEffect);
+                        return;
+                    } else legalMovesWhenKingThreatened.clear();
+                }
                 boolean res = chessEngine.nextMove(p.getXPos(), p.getYPos(), posX, posY);
                 if (!res) {
                     int[] orig = getCoordinates(p.getXPos(), p.getYPos());
@@ -136,10 +154,19 @@ public class ChessApplication extends Application {
                 }
                 int[] newCoordinates = getCoordinates(posX, posY);
                 switchTurnAnimation(p.getIsWhite());
-                checkKingMat(!p.getIsWhite());
+                checkKingMat(chessEngine.chessBoard, !p.getIsWhite());
                 piece.setLayoutX(newCoordinates[0] - piece.getFitWidth() / 2);
                 piece.setLayoutY(newCoordinates[1] - piece.getFitHeight() / 2);
                 playPiecePlacementSound();
+                boolean ended;
+                ended = kingCheckMate(!p.getIsWhite(),false);
+                if (ended){
+                    showWinScreen(p.getIsWhite());
+                    System.out.println((p.getIsWhite() ? "White" : "Black") + " won");
+                }
+                if (checkKingMat(chessEngine.chessBoard, !p.getIsWhite())){
+                    kingCheckMate(!p.getIsWhite(),true);
+                }
             }
 
         });
@@ -147,34 +174,82 @@ public class ChessApplication extends Application {
         pieces.put(p, piece);
         root.getChildren().add(piece);
     }
-
+    private boolean positionIsThreatened(boolean white, char x, int y){
+        for (Pioni p : chessEngine.chessBoard.getPionia()){
+            if (p.getIsWhite() == white){
+                if (p.isLegalMove(x,y)) return true;
+            }
+        }
+        return false;
+    }
     private int[] getCoordinates(char x, int y) {
         int[] coordinates = new int[2];
         coordinates[0] = 50 + Math.abs(Utilities.char2Int(x) - 1) * 100;
         coordinates[1] = 50 + Math.abs(y - 8) * 100;
         return coordinates;
     }
-    private void checkKingMat(boolean white){
-        Pioni allyKing = chessEngine.chessBoard.getPionia()
+    private void showWinScreen(boolean winnerIsWhite) {
+        Canvas canvas = new Canvas(800, 600);
+        GraphicsContext gc = canvas.getGraphicsContext2D();
+
+        gc.setFill(Color.TRANSPARENT);
+        gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
+        gc.setFill(Color.BLACK);
+        gc.setFont(javafx.scene.text.Font.font("Arial", 40));
+
+        String text = (winnerIsWhite ? "White" : "Black") + " won!";
+        double textWidth = gc.getFont().getSize() * text.length() / 2.5;
+        double textX = (canvas.getWidth() - textWidth) / 2;
+        double textY = canvas.getHeight() / 3;
+        gc.fillText(text, textX, textY);
+
+        ImageView mpartzokas = new ImageView(new Image("mpartzokas.png"));
+        mpartzokas.setFitWidth(300);
+        mpartzokas.setPreserveRatio(true);
+        mpartzokas.setLayoutX((canvas.getWidth() - mpartzokas.getFitWidth()) / 2);
+        mpartzokas.setLayoutY(textY + 50);
+
+        root.getChildren().addAll(canvas, mpartzokas);
+    }
+    private boolean checkKingMat(ChessBoard chessBoard, boolean white){
+        Pioni allyKing = chessBoard.getPionia()
                 .stream()
                 .filter(p -> p.getIsWhite() == white && p.type.equals("Vasilias"))
                 .findFirst()
                 .orElse(null);
         assert allyKing != null;
-        for (Pioni p : pieces.keySet()) {
+        for (Pioni p : chessBoard.getPionia()) {
             if (p.getIsWhite() != white){
                 if (p.isLegalMove(allyKing.getXPos(), allyKing.getYPos())) {
                     if (white) {
-                        whiteKingThreatened = true;
-                        pieces.get(allyKing).setEffect(kingCheckEffect);
+                        ImageView kingView = pieces.get(allyKing);
+                        if (kingView != null) kingView.setEffect(kingCheckEffect);
+                        return true;
                     }
                     else {
-                        blackKingThreatened = true;
-                        pieces.get(allyKing).setEffect(kingCheckEffect);
+                        ImageView kingView = pieces.get(allyKing);
+                        if (kingView != null) kingView.setEffect(kingCheckEffect);
+                        return true;
                     }
                 }
             }
         }
+        return false;
+    }
+    private boolean kingCheckMate(boolean white, boolean saveRoutes) {
+        ArrayList<Pioni> duplicatePieces = chessEngine.chessBoard.getPionia().stream().filter(pioni -> pioni.getIsWhite() == white && !pioni.getCaptured()).collect(Collectors.toCollection(ArrayList::new));
+        for (Pioni p : duplicatePieces) {
+            for (int[] pos : allPositions) {
+                ChessBoard testChessBoard = chessEngine.chessBoard.clone();
+                Pioni duplicatePioni = testChessBoard.getPioniAt(p.getXPos(), p.getYPos());
+                if (duplicatePioni.isLegalMove(Utilities.int2Char(pos[0]), pos[1])) {
+                    testChessBoard.move(p.getXPos(), p.getYPos(), Utilities.int2Char(pos[0]), pos[1]);
+                    if (!saveRoutes && !checkKingMat(testChessBoard, white)) return false;
+                    if (!checkKingMat(testChessBoard, white)) legalMovesWhenKingThreatened.put(chessEngine.chessBoard.getPioniAt(p.getXPos(),p.getYPos()),new int[] {pos[0],pos[1]});
+                }
+            }
+        }
+        return true;
     }
 
     private int[] coordinatesToPosition(int x, int y) {
@@ -197,6 +272,7 @@ public class ChessApplication extends Application {
         }
 
     }
+
     public static void main(String[] args) {
         launch();
     }

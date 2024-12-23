@@ -12,6 +12,6 @@ public class Vasilias extends Pioni {
         int nextPositionX = Utilities.char2Int(x);
         int xDiff = Math.abs(currentPositionX - nextPositionX);
         int yDiff = Math.abs(currentPositionY - y);
-        return xDiff <= 1 && yDiff <= 1 && (xDiff != 0 || yDiff != 0);
+        return xDiff <= 1 && yDiff <= 1 && (xDiff != 0 || yDiff != 0) && (this.chessBoard.getPioniAt(x,y) == null || this.chessBoard.getPioniAt(x,y).getIsWhite() != getIsWhite());
     }
 }

@@ -122,6 +122,8 @@ public abstract class Pioni {
     public boolean getIsWhite(){
         return isWhite;
     }
+    public void setChessBoard(ChessBoard chessBoard){ this.chessBoard = chessBoard; }
+    public ChessBoard getChessBoard(){ return chessBoard; }
     public void setType(String type){
         this.type = type;
     }
@@ -144,5 +146,18 @@ public abstract class Pioni {
     @Override
     public String toString(){
         return String.format("Type: %s Position: [%c,%d]", type, Utilities.int2Char(position[0]), position[1]);
+    }
+    @Override
+    protected Pioni clone() {
+        try {
+            Pioni cloned = this.getClass()
+                    .getConstructor(Boolean.class, ChessBoard.class, char.class, int.class)
+                    .newInstance(this.isWhite, null, Utilities.int2Char(this.position[0]), this.position[1]);
+            cloned.setCaptured(this.getCaptured());
+            cloned.setImagePath(this.getImagePath());
+            return cloned;
+        } catch (Exception e) {
+            throw new AssertionError("Clone operation failed", e);
+        }
     }
 }

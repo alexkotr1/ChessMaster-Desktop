@@ -30,6 +30,6 @@ public class Stratiotis extends Pioni {
             }
         }
         ArrayList<int[]> route = getRoute(currentX,currentY,destX,y);
-        return (route != null && !route.isEmpty() && route.getLast()[0] == destX && route.getLast()[1] == y);
+        return (route != null && !route.isEmpty() && route.getLast()[0] == destX && route.getLast()[1] == y) && (this.chessBoard.getPioniAt(x,y) == null || this.chessBoard.getPioniAt(x,y).getIsWhite() != getIsWhite());
     }
 }

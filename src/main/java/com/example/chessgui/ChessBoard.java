@@ -43,6 +43,7 @@ public class ChessBoard {
     public Pioni getPioniAt(char xPos, int yPos){
         return Pionia.stream().filter(pioni -> Utilities.int2Char(pioni.getPosition()[0]) == xPos && pioni.getPosition()[1] == yPos && !pioni.getCaptured()).findFirst().orElse(null);
     }
+
     public ArrayList<Pioni> getPionia(){
         return Pionia;
     }
@@ -70,6 +71,17 @@ public class ChessBoard {
         }
         System.out.println("  ------------------------\n   a  b  c  d  e  f  g  h");
 
+    }
+    @Override
+    protected ChessBoard clone() {
+        ChessBoard chessBoard = new ChessBoard();
+        chessBoard.whiteTurn = whiteTurn;
+        for (Pioni p : Pionia){
+            Pioni clone = p.clone();
+            clone.setChessBoard(chessBoard);
+            chessBoard.Pionia.add(clone);
+        }
+        return chessBoard;
     }
     public void capture(Pioni p){
         p.setCaptured(true);

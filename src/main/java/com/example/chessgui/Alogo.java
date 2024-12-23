@@ -17,6 +17,6 @@ public class Alogo extends Pioni {
         int currentX = Utilities.char2Int(getXPos());
         int currentY = getYPos();
         final int[][] allowed = {{2,-1},{-1,-2},{1,-2},{2,-1},{2,1},{1,2},{-1,2},{-2,1}};
-        return Arrays.stream(allowed).anyMatch(arr -> currentX + arr[0] == destX && currentY + arr[1] == destY);
+        return Arrays.stream(allowed).anyMatch(arr -> currentX + arr[0] == destX && currentY + arr[1] == destY) && (this.chessBoard.getPioniAt(x,y) == null || this.chessBoard.getPioniAt(x,y).getIsWhite() != getIsWhite());
     }
 }
