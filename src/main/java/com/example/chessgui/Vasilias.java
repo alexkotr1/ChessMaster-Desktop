@@ -1,6 +1,7 @@
 package com.example.chessgui;
 
 public class Vasilias extends Pioni {
+    private boolean moved;
     public Vasilias(Boolean isWhite, ChessBoard chessBoard, char initialX, int initialY) {
         super(isWhite, chessBoard, initialX, initialY);
     }
@@ -12,6 +13,10 @@ public class Vasilias extends Pioni {
         int nextPositionX = Utilities.char2Int(x);
         int xDiff = Math.abs(currentPositionX - nextPositionX);
         int yDiff = Math.abs(currentPositionY - y);
+
         return xDiff <= 1 && yDiff <= 1 && (xDiff != 0 || yDiff != 0) && (this.chessBoard.getPioniAt(x,y) == null || this.chessBoard.getPioniAt(x,y).getIsWhite() != getIsWhite());
     }
+
+    public void setMoved(boolean moved) {this.moved = moved;}
+    public boolean isMoved() {return moved;}
 }

@@ -8,12 +8,9 @@ import javafx.scene.effect.DropShadow;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.AnchorPane;
-import javafx.scene.media.Media;
-import javafx.scene.media.MediaPlayer;
-import javafx.scene.media.MediaView;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
-import javafx.util.Duration;
+
 
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
@@ -21,7 +18,7 @@ import javax.sound.sampled.Clip;
 import javax.sound.sampled.LineEvent;
 import java.io.BufferedInputStream;
 import java.io.InputStream;
-import java.lang.reflect.Array;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -30,14 +27,17 @@ public class ChessApplication extends Application {
     private HashMap<Pioni, ImageView> pieces = new HashMap<>();
     private double mouseX;
     private double mouseY;
-    private final DropShadow turnEffect = new DropShadow();
+    private final DropShadow whiteTurnEffect = new DropShadow();
+    private final DropShadow blackTurnEffect = new DropShadow();
     private final DropShadow kingCheckEffect = new DropShadow();
     private ChessEngine chessEngine;
-    private final HashMap<Pioni,int[]> legalMovesWhenKingThreatened = new HashMap<>();
+    private final HashMap<Pioni,ArrayList<int[]>> legalMovesWhenKingThreatened = new HashMap<>();
     HashMap<String,ImageView> possibleMoveIndicators = new HashMap<>();
     ArrayList<int[]> allPositions = new ArrayList<>();
     Stage stage;
     AnchorPane root;
+    private final int tile = 90;
+    private final int offBoundsEnd = 40;
     public ChessApplication() {}
 
     @Override
@@ -45,33 +45,43 @@ public class ChessApplication extends Application {
         this.stage = stage;
         AnchorPane root = new AnchorPane();
         this.root = root;
-        stage.setHeight(800);
-        stage.setWidth(800);
-
-        ImageView background = new ImageView(new Image("chessBoard.png"));
-        background.setFitWidth(stage.getWidth());
-        background.setFitHeight(stage.getHeight());
+        ImageView background = new ImageView(new Image("chessBoard.jpeg"));
+        background.setFitWidth(800);
+        background.setFitHeight(800);
         background.setLayoutX(0);
         background.setLayoutY(0);
+        background.setPreserveRatio(false);
 
+        ImageView background2 = new ImageView(new Image("background.png"));
+        background2.setFitWidth(200);
+        background2.setFitHeight(800);
+        background2.setLayoutX(800);
+        background2.setLayoutY(0);
+        background2.setPreserveRatio(false);
 
-        turnEffect.setColor(Color.GOLD);
-        turnEffect.setRadius(1);
-        turnEffect.setSpread(1.0);
+        whiteTurnEffect.setColor(Color.web("#5BC0EB"));
+        whiteTurnEffect.setRadius(1);
+        whiteTurnEffect.setSpread(1.0);
+
+        blackTurnEffect.setColor(Color.web("#FFD700"));
+        blackTurnEffect.setRadius(1);
+        blackTurnEffect.setSpread(1.0);
 
         kingCheckEffect.setColor(Color.RED);
         kingCheckEffect.setRadius(2);
         kingCheckEffect.setSpread(1.0);
 
-        root.getChildren().add(background);
+        root.getChildren().addAll(background,background2);
         chessEngine = new ChessEngine();
         chessEngine.playChess();
         ArrayList<Pioni> Pionia = chessEngine.chessBoard.getPionia();
         for (Pioni p : Pionia) {
             addPiece(root, p);
         }
-        Scene scene = new Scene(root, 800, 800);
+        Scene scene = new Scene(root, 1000, 800);
         stage.setTitle("Chess Game");
+        stage.setMaximized(false);
+        stage.setResizable(false);
         stage.setScene(scene);
         stage.show();
         for (int x = 1;x<=8;x++){
@@ -98,7 +108,7 @@ public class ChessApplication extends Application {
         piece.setFitHeight(60);
         piece.setLayoutX(coordinates[0] - piece.getFitWidth() / 2);
         piece.setLayoutY(coordinates[1] - piece.getFitHeight() / 2);
-        piece.setPreserveRatio(true);
+        piece.setPreserveRatio(false);
         piece.setOnMousePressed(event -> {
             mouseX = event.getSceneX() - piece.getLayoutX();
             mouseY = event.getSceneY() - piece.getLayoutY();
@@ -111,14 +121,16 @@ public class ChessApplication extends Application {
                 System.out.println(legalMovesWhenKingThreatened);
                 if (!legalMovesWhenKingThreatened.isEmpty()){
                     if (legalMovesWhenKingThreatened.get(p) == null) return;
-                    int[] dest = legalMovesWhenKingThreatened.get(p);
-                    possibleMoveIndicators.get(String.valueOf(Utilities.int2Char(dest[0])) + dest[1]).setVisible(true);
+                    ArrayList<int[]> destinations = legalMovesWhenKingThreatened.get(p);
+                    for (int[] dest : destinations) {
+                        possibleMoveIndicators.get(String.valueOf(Utilities.int2Char(dest[0])) + dest[1]).setVisible(true);
+                    }
                 } else {
                     for (int[] dest : allPositions) {
                         char destX = Utilities.int2Char(dest[0]);
                         int  destY = dest[1];
                         boolean res = p.isLegalMove(destX, destY);
-                        if (res) possibleMoveIndicators.get(String.valueOf(destX) + destY).setVisible(true);
+                        if (res && !checkDumbMove(p,new int[]{ Utilities.char2Int(destX),destY})) possibleMoveIndicators.get(String.valueOf(destX) + destY).setVisible(true);
                     }
                 }
             }
@@ -132,21 +144,28 @@ public class ChessApplication extends Application {
                 char posX = Utilities.int2Char(position[0]);
                 int posY = position[1];
                 if (!legalMovesWhenKingThreatened.isEmpty()){
-                    int[] desiredMove = legalMovesWhenKingThreatened.get(p);
-                    if (desiredMove == null || desiredMove[0] != position[0] || desiredMove[1] != position[1]) {
+                    ArrayList<int[]> desiredMoves = legalMovesWhenKingThreatened.get(p);
+                    if (desiredMoves != null && desiredMoves.stream().noneMatch(arr->arr[0] == position[0] && arr[1] == posY)) {
                         int[] orig = getCoordinates(p.getXPos(), p.getYPos());
                         piece.setLayoutX(orig[0] - piece.getFitWidth() / 2);
                         piece.setLayoutY(orig[1] - piece.getFitHeight() / 2);
-                        piece.setEffect(turnEffect);
+                        piece.setEffect(p.isWhite ? whiteTurnEffect : blackTurnEffect);
                         return;
                     } else legalMovesWhenKingThreatened.clear();
+                }
+                if (checkDumbMove(p,new int[]{position[0],position[1]})){
+                    int[] orig = getCoordinates(p.getXPos(), p.getYPos());
+                    piece.setLayoutX(orig[0] - piece.getFitWidth() / 2);
+                    piece.setLayoutY(orig[1] - piece.getFitHeight() / 2);
+                    piece.setEffect(p.isWhite ? whiteTurnEffect : blackTurnEffect);
+                    return;
                 }
                 boolean res = chessEngine.nextMove(p.getXPos(), p.getYPos(), posX, posY);
                 if (!res) {
                     int[] orig = getCoordinates(p.getXPos(), p.getYPos());
                     piece.setLayoutX(orig[0] - piece.getFitWidth() / 2);
                     piece.setLayoutY(orig[1] - piece.getFitHeight() / 2);
-                    piece.setEffect(turnEffect);
+                    piece.setEffect(p.isWhite ? whiteTurnEffect : blackTurnEffect);
                     return;
                 }
                 for (Pioni pioni : pieces.keySet()) {
@@ -174,19 +193,18 @@ public class ChessApplication extends Application {
         pieces.put(p, piece);
         root.getChildren().add(piece);
     }
-    private boolean positionIsThreatened(boolean white, char x, int y){
-        for (Pioni p : chessEngine.chessBoard.getPionia()){
-            if (p.getIsWhite() == white){
-                if (p.isLegalMove(x,y)) return true;
-            }
-        }
-        return false;
-    }
+
     private int[] getCoordinates(char x, int y) {
         int[] coordinates = new int[2];
-        coordinates[0] = 50 + Math.abs(Utilities.char2Int(x) - 1) * 100;
-        coordinates[1] = 50 + Math.abs(y - 8) * 100;
+        coordinates[0] = offBoundsEnd + Math.abs(Utilities.char2Int(x) - 1) * tile + tile / 2;
+        coordinates[1] = offBoundsEnd + Math.abs(y - 8) * tile + tile / 2;
         return coordinates;
+    }
+    private int[] coordinatesToPosition(int x, int y) {
+        int[] position = new int[2];
+        position[0] = Math.abs(x-offBoundsEnd) / tile + 1;
+        position[1] = Math.abs(y - tile*8) / tile + 1;
+        return position;
     }
     private void showWinScreen(boolean winnerIsWhite) {
         Canvas canvas = new Canvas(800, 600);
@@ -218,7 +236,7 @@ public class ChessApplication extends Application {
                 .findFirst()
                 .orElse(null);
         assert allyKing != null;
-        for (Pioni p : chessBoard.getPionia()) {
+        for (Pioni p : chessBoard.getPionia().stream().filter(pioni -> !pioni.getCaptured()).collect(Collectors.toCollection(ArrayList::new))) {
             if (p.getIsWhite() != white){
                 if (p.isLegalMove(allyKing.getXPos(), allyKing.getYPos())) {
                     if (white) {
@@ -245,29 +263,36 @@ public class ChessApplication extends Application {
                 if (duplicatePioni.isLegalMove(Utilities.int2Char(pos[0]), pos[1])) {
                     testChessBoard.move(p.getXPos(), p.getYPos(), Utilities.int2Char(pos[0]), pos[1]);
                     if (!saveRoutes && !checkKingMat(testChessBoard, white)) return false;
-                    if (!checkKingMat(testChessBoard, white)) legalMovesWhenKingThreatened.put(chessEngine.chessBoard.getPioniAt(p.getXPos(),p.getYPos()),new int[] {pos[0],pos[1]});
+                    else if (!checkKingMat(testChessBoard, white)) {
+                        Pioni origPioni = chessEngine.chessBoard.getPioniAt(p.getXPos(), p.getYPos());
+                        ArrayList<int[]> existingRoutes = legalMovesWhenKingThreatened.get(origPioni);
+                        if (existingRoutes == null) existingRoutes = new ArrayList<>();
+                        existingRoutes.add(new int[]{ pos[0],pos[1] });
+                        legalMovesWhenKingThreatened.put(origPioni, existingRoutes);
+                    }
                 }
             }
         }
         return true;
     }
-
-    private int[] coordinatesToPosition(int x, int y) {
-        int[] position = new int[2];
-        position[0] = Math.abs(x) / 100 + 1;
-        position[1] = Math.abs(y - 800) / 100 + 1;
-        return position;
+    private boolean checkDumbMove(Pioni p, int[] dest){
+        ChessBoard testChessBoard = chessEngine.chessBoard.clone();
+        testChessBoard.move(p.getXPos(), p.getYPos(), Utilities.int2Char(dest[0]), dest[1]);
+        System.out.println("Check dumb move:" + checkKingMat(testChessBoard,p.isWhite));
+        return checkKingMat(testChessBoard,p.isWhite);
     }
+
+
     private void switchTurnAnimation(boolean isWhite) {
         if (isWhite) {
             for (Pioni p : pieces.keySet()) {
-                if (!p.isWhite) pieces.get(p).setEffect(turnEffect);
+                if (!p.isWhite) pieces.get(p).setEffect(blackTurnEffect);
                 else pieces.get(p).setEffect(null);
             }
             return;
         }
         for (Pioni p : pieces.keySet()) {
-            if (p.isWhite) pieces.get(p).setEffect(turnEffect);
+            if (p.isWhite) pieces.get(p).setEffect(whiteTurnEffect);
             else pieces.get(p).setEffect(null);
         }
 
@@ -279,7 +304,7 @@ public class ChessApplication extends Application {
 
     private void playPiecePlacementSound() {
         try {
-            InputStream inputStream = getClass().getResourceAsStream("/placement.wav");
+            InputStream inputStream = getClass().getResourceAsStream("/piece placement.wav");
             if (inputStream == null) {
                 return;
             }

@@ -16,7 +16,7 @@ public class Stratiotis extends Pioni {
         int currentY = getYPos();
         if (!isWithinBounds(x,y) || (isWhite && currentY > y) || (!isWhite && currentY < y)) return false;
         if (destX != currentX){
-            return Math.abs(destX - currentX) == 1 && Math.abs(currentY - y) == 1 && chessBoard.getPioniAt(x, y) != null;
+            return Math.abs(destX - currentX) == 1 && Math.abs(currentY - y) == 1 && chessBoard.getPioniAt(x, y) != null && chessBoard.getPioniAt(x, y).getIsWhite() != isWhite;
         }
         if (y != currentY && chessBoard.getPioniAt(x, y) != null) {return false;}
 

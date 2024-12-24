@@ -5,6 +5,7 @@ import java.util.ArrayList;
 public class ChessBoard {
     private final ArrayList<Pioni> Pionia = new ArrayList<>();
     private boolean whiteTurn = true;
+
     public void placePioniAt(Pioni p, char xPos, int yPos){
         p.setXPos(xPos);
         p.setYPos(yPos);
@@ -49,7 +50,11 @@ public class ChessBoard {
     }
     public void move(char xOrig, int yOrig, char xDest,int yDest){
         Pioni p = getPioniAt(xOrig,yOrig);
+        Pioni pioniAtDestination = getPioniAt(xDest,yDest);
+        if (pioniAtDestination != null) capture(pioniAtDestination);
         placePioniAt(p,xDest,yDest);
+        if (p.type.equals("Pyrgos")) ((Pyrgos) p).setMoved(true);
+        else if (p.type.equals("Vasilias")) ((Vasilias) p).setMoved(true);
         whiteTurn = !whiteTurn;
     }
     public Boolean getWhiteTurn(){

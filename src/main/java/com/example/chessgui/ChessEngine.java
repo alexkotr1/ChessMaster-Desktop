@@ -1,7 +1,7 @@
 package com.example.chessgui;
 
 public class ChessEngine {
-    ChessBoard chessBoard = new ChessBoard();
+    protected ChessBoard chessBoard = new ChessBoard();
     public void playChess(){
         chessBoard.loadBoard();
         chessBoard.printBoard();
@@ -12,7 +12,6 @@ public class ChessEngine {
             System.out.println("There is no pioni at " + xOrig + " at " + yOrig);
             return false;
         }
-        Pioni pioniAtDestination = chessBoard.getPioniAt(xDest,yDest);
         if (p.getIsWhite() != chessBoard.getWhiteTurn()) {
             System.out.println("It's not " + (chessBoard.getWhiteTurn() ? "black" : "white" + "'s turn"));
             return false;
@@ -21,7 +20,6 @@ public class ChessEngine {
             System.out.println("Illegal move!");
             return false;
         }
-        if (pioniAtDestination != null) chessBoard.capture(pioniAtDestination);
 
         chessBoard.move(xOrig,yOrig,xDest,yDest);
         //chessBoard.printBoard();
