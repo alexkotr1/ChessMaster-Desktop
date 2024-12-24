@@ -67,9 +67,6 @@ public class ChessApplication extends Application {
         blackTurnEffect.setRadius(1);
         blackTurnEffect.setSpread(1.0);
 
-        kingCheckEffect.setColor(Color.RED);
-        kingCheckEffect.setRadius(2);
-        kingCheckEffect.setSpread(1.0);
 
         root.getChildren().addAll(background,background2);
         chessEngine = new ChessEngine();
@@ -173,18 +170,19 @@ public class ChessApplication extends Application {
                 }
                 int[] newCoordinates = getCoordinates(posX, posY);
                 switchTurnAnimation(p.getIsWhite());
-                checkKingMat(chessEngine.chessBoard, !p.getIsWhite());
+
                 piece.setLayoutX(newCoordinates[0] - piece.getFitWidth() / 2);
                 piece.setLayoutY(newCoordinates[1] - piece.getFitHeight() / 2);
                 playPiecePlacementSound();
                 boolean ended;
-                ended = kingCheckMate(!p.getIsWhite(),false);
+                ended = chessEngine.kingCheckMate(!p.getIsWhite(),null);
                 if (ended){
                     showWinScreen(p.getIsWhite());
                     System.out.println((p.getIsWhite() ? "White" : "Black") + " won");
                 }
-                if (checkKingMat(chessEngine.chessBoard, !p.getIsWhite())){
-                    kingCheckMate(!p.getIsWhite(),true);
+                if (ChessEngine.checkKingMat(chessEngine.chessBoard, !p.getIsWhite())){
+                    setKingCheckEffect(!p.getIsWhite());
+                    chessEngine.kingCheckMate(!p.getIsWhite(),legalMovesWhenKingThreatened);
                 }
             }
 
@@ -229,57 +227,12 @@ public class ChessApplication extends Application {
 
         root.getChildren().addAll(canvas, mpartzokas);
     }
-    private boolean checkKingMat(ChessBoard chessBoard, boolean white){
-        Pioni allyKing = chessBoard.getPionia()
-                .stream()
-                .filter(p -> p.getIsWhite() == white && p.type.equals("Vasilias"))
-                .findFirst()
-                .orElse(null);
-        assert allyKing != null;
-        for (Pioni p : chessBoard.getPionia().stream().filter(pioni -> !pioni.getCaptured()).collect(Collectors.toCollection(ArrayList::new))) {
-            if (p.getIsWhite() != white){
-                if (p.isLegalMove(allyKing.getXPos(), allyKing.getYPos())) {
-                    if (white) {
-                        ImageView kingView = pieces.get(allyKing);
-                        if (kingView != null) kingView.setEffect(kingCheckEffect);
-                        return true;
-                    }
-                    else {
-                        ImageView kingView = pieces.get(allyKing);
-                        if (kingView != null) kingView.setEffect(kingCheckEffect);
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
-    }
-    private boolean kingCheckMate(boolean white, boolean saveRoutes) {
-        ArrayList<Pioni> duplicatePieces = chessEngine.chessBoard.getPionia().stream().filter(pioni -> pioni.getIsWhite() == white && !pioni.getCaptured()).collect(Collectors.toCollection(ArrayList::new));
-        for (Pioni p : duplicatePieces) {
-            for (int[] pos : allPositions) {
-                ChessBoard testChessBoard = chessEngine.chessBoard.clone();
-                Pioni duplicatePioni = testChessBoard.getPioniAt(p.getXPos(), p.getYPos());
-                if (duplicatePioni.isLegalMove(Utilities.int2Char(pos[0]), pos[1])) {
-                    testChessBoard.move(p.getXPos(), p.getYPos(), Utilities.int2Char(pos[0]), pos[1]);
-                    if (!saveRoutes && !checkKingMat(testChessBoard, white)) return false;
-                    else if (!checkKingMat(testChessBoard, white)) {
-                        Pioni origPioni = chessEngine.chessBoard.getPioniAt(p.getXPos(), p.getYPos());
-                        ArrayList<int[]> existingRoutes = legalMovesWhenKingThreatened.get(origPioni);
-                        if (existingRoutes == null) existingRoutes = new ArrayList<>();
-                        existingRoutes.add(new int[]{ pos[0],pos[1] });
-                        legalMovesWhenKingThreatened.put(origPioni, existingRoutes);
-                    }
-                }
-            }
-        }
-        return true;
-    }
+
+
     private boolean checkDumbMove(Pioni p, int[] dest){
         ChessBoard testChessBoard = chessEngine.chessBoard.clone();
         testChessBoard.move(p.getXPos(), p.getYPos(), Utilities.int2Char(dest[0]), dest[1]);
-        System.out.println("Check dumb move:" + checkKingMat(testChessBoard,p.isWhite));
-        return checkKingMat(testChessBoard,p.isWhite);
+        return ChessEngine.checkKingMat(testChessBoard,p.isWhite);
     }
 
 
@@ -301,7 +254,15 @@ public class ChessApplication extends Application {
     public static void main(String[] args) {
         launch();
     }
-
+    private void setKingCheckEffect(boolean white){
+        DropShadow ds = new DropShadow();
+        ds.setColor(Color.RED);
+        ds.setRadius(2);
+        ds.setSpread(1);
+        Pioni king = chessEngine.chessBoard.getPionia().stream().filter(p->p.getIsWhite() == white && p.type.equals("Vasilias")).findFirst().orElse(null);
+        if (king == null) return;
+        pieces.get(king).setEffect(ds);
+    }
     private void playPiecePlacementSound() {
         try {
             InputStream inputStream = getClass().getResourceAsStream("/piece placement.wav");
