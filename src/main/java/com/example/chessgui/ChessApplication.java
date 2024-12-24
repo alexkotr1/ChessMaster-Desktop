@@ -11,15 +11,14 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
-
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
 import javax.sound.sampled.LineEvent;
 import java.io.BufferedInputStream;
 import java.io.InputStream;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 
 public class ChessApplication extends Application {
@@ -103,10 +102,12 @@ public class ChessApplication extends Application {
         piece.setLayoutX(coordinates[0] - piece.getFitWidth() / 2);
         piece.setLayoutY(coordinates[1] - piece.getFitHeight() / 2);
         piece.setPreserveRatio(false);
+
         piece.setOnMousePressed(event -> {
             mouseX = event.getSceneX() - piece.getLayoutX();
             mouseY = event.getSceneY() - piece.getLayoutY();
         });
+
         piece.setOnMouseDragged(event -> {
             if (chessEngine.chessBoard.getWhiteTurn() == p.getIsWhite()) {
                 piece.setEffect(null);
@@ -128,60 +129,53 @@ public class ChessApplication extends Application {
                 }
             }
         });
+
         piece.setOnMouseReleased(event -> {
             for (ImageView indicator : possibleMoveIndicators.values()) {
                 indicator.setVisible(false);
             }
-            if (chessEngine.chessBoard.getWhiteTurn() == p.getIsWhite()) {
-                int[] position = coordinatesToPosition((int) (event.getSceneX() - mouseX), (int) (event.getSceneY() - mouseY));
-                char posX = Utilities.int2Char(position[0]);
-                int posY = position[1];
-                HashMap<Pioni,ArrayList<int[]>> legalMovesWhenKingThreatened = chessEngine.kingCheckMate(p.isWhite);
-                if (legalMovesWhenKingThreatened != null && !legalMovesWhenKingThreatened.isEmpty()){
-                    ArrayList<int[]> desiredMoves = legalMovesWhenKingThreatened.get(p);
-                    if (desiredMoves != null && desiredMoves.stream().noneMatch(arr->arr[0] == position[0] && arr[1] == posY)) {
-                        int[] orig = getCoordinates(p.getXPos(), p.getYPos());
-                        piece.setLayoutX(orig[0] - piece.getFitWidth() / 2);
-                        piece.setLayoutY(orig[1] - piece.getFitHeight() / 2);
-                        piece.setEffect(p.isWhite ? whiteTurnEffect : blackTurnEffect);
-                        return;
-                    } else legalMovesWhenKingThreatened.clear();
-                }
-                if (chessEngine.checkDumbMove(p,new int[]{position[0],position[1]})){
+            if (chessEngine.chessBoard.getWhiteTurn() != p.getIsWhite()) return;
+            int[] position = coordinatesToPosition((int) (event.getSceneX() - mouseX), (int) (event.getSceneY() - mouseY));
+            char posX = Utilities.int2Char(position[0]);
+            int posY = position[1];
+            HashMap<Pioni,ArrayList<int[]>> legalMovesWhenKingThreatened = chessEngine.kingCheckMate(p.isWhite);
+            if (legalMovesWhenKingThreatened != null && !legalMovesWhenKingThreatened.isEmpty()){
+                ArrayList<int[]> desiredMoves = legalMovesWhenKingThreatened.get(p);
+                if (desiredMoves != null && desiredMoves.stream().noneMatch(arr->arr[0] == position[0] && arr[1] == posY)) {
                     int[] orig = getCoordinates(p.getXPos(), p.getYPos());
                     piece.setLayoutX(orig[0] - piece.getFitWidth() / 2);
                     piece.setLayoutY(orig[1] - piece.getFitHeight() / 2);
                     piece.setEffect(p.isWhite ? whiteTurnEffect : blackTurnEffect);
                     return;
-                }
-                boolean res = chessEngine.nextMove(p.getXPos(), p.getYPos(), posX, posY);
-                if (!res) {
-                    int[] orig = getCoordinates(p.getXPos(), p.getYPos());
-                    piece.setLayoutX(orig[0] - piece.getFitWidth() / 2);
-                    piece.setLayoutY(orig[1] - piece.getFitHeight() / 2);
-                    piece.setEffect(p.isWhite ? whiteTurnEffect : blackTurnEffect);
-                    return;
-                }
-                for (Pioni pioni : pieces.keySet()) {
-                    if (pioni.getCaptured()) pieces.get(pioni).setVisible(false);
-                }
-                int[] newCoordinates = getCoordinates(posX, posY);
-                switchTurnAnimation(p.getIsWhite());
-
-                piece.setLayoutX(newCoordinates[0] - piece.getFitWidth() / 2);
-                piece.setLayoutY(newCoordinates[1] - piece.getFitHeight() / 2);
-                playPiecePlacementSound();
-                boolean ended;
-                HashMap<Pioni,ArrayList<int[]>> legalMovesWhenEnemyKingThreatened = chessEngine.kingCheckMate(!p.getIsWhite());
-                ended = legalMovesWhenEnemyKingThreatened != null;
-                if (ended){
-                    showWinScreen(p.getIsWhite());
-                    System.out.println((p.getIsWhite() ? "White" : "Black") + " won");
-                }
-                if (ChessEngine.checkKingMat(chessEngine.chessBoard, !p.getIsWhite())){
-                    setKingCheckEffect(!p.getIsWhite());
-                }
+                } else legalMovesWhenKingThreatened.clear();
             }
+            if (chessEngine.checkDumbMove(p,new int[]{position[0],position[1]})){
+                int[] orig = getCoordinates(p.getXPos(), p.getYPos());
+                piece.setLayoutX(orig[0] - piece.getFitWidth() / 2);
+                piece.setLayoutY(orig[1] - piece.getFitHeight() / 2);
+                piece.setEffect(p.isWhite ? whiteTurnEffect : blackTurnEffect);
+                return;
+            }
+            boolean res = chessEngine.nextMove(p.getXPos(), p.getYPos(), posX, posY);
+            if (!res) {
+                int[] orig = getCoordinates(p.getXPos(), p.getYPos());
+                piece.setLayoutX(orig[0] - piece.getFitWidth() / 2);
+                piece.setLayoutY(orig[1] - piece.getFitHeight() / 2);
+                piece.setEffect(p.isWhite ? whiteTurnEffect : blackTurnEffect);
+                return;
+            }
+            for (Pioni pioni : pieces.keySet()) {
+                if (pioni.getCaptured()) pieces.get(pioni).setVisible(false);
+            }
+            int[] newCoordinates = getCoordinates(posX, posY);
+            switchTurnAnimation(p.getIsWhite());
+
+            piece.setLayoutX(newCoordinates[0] - piece.getFitWidth() / 2);
+            piece.setLayoutY(newCoordinates[1] - piece.getFitHeight() / 2);
+            playPiecePlacementSound();
+            HashMap<Pioni,ArrayList<int[]>> legalMovesWhenEnemyKingThreatened = chessEngine.kingCheckMate(!p.getIsWhite());
+            if (legalMovesWhenEnemyKingThreatened != null) showWinScreen(p.getIsWhite());
+            if (ChessEngine.checkKingMat(chessEngine.chessBoard, !p.getIsWhite())) setKingCheckEffect(!p.getIsWhite());
 
         });
         switchTurnAnimation(p.getIsWhite());
