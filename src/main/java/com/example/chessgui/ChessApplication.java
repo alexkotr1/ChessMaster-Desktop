@@ -20,7 +20,6 @@ import java.io.BufferedInputStream;
 import java.io.InputStream;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 
 public class ChessApplication extends Application {
@@ -29,9 +28,7 @@ public class ChessApplication extends Application {
     private double mouseY;
     private final DropShadow whiteTurnEffect = new DropShadow();
     private final DropShadow blackTurnEffect = new DropShadow();
-    private final DropShadow kingCheckEffect = new DropShadow();
     private ChessEngine chessEngine;
-    private final HashMap<Pioni,ArrayList<int[]>> legalMovesWhenKingThreatened = new HashMap<>();
     HashMap<String,ImageView> possibleMoveIndicators = new HashMap<>();
     ArrayList<int[]> allPositions = new ArrayList<>();
     Stage stage;
@@ -115,11 +112,10 @@ public class ChessApplication extends Application {
                 piece.setEffect(null);
                 piece.setLayoutX(event.getSceneX() - mouseX);
                 piece.setLayoutY(event.getSceneY() - mouseY);
-                System.out.println(legalMovesWhenKingThreatened);
-                if (!legalMovesWhenKingThreatened.isEmpty()){
+                HashMap<Pioni,ArrayList<int[]>> legalMovesWhenKingThreatened = chessEngine.kingCheckMate(p.isWhite);
+                if (legalMovesWhenKingThreatened != null && !legalMovesWhenKingThreatened.isEmpty()){
                     if (legalMovesWhenKingThreatened.get(p) == null) return;
-                    ArrayList<int[]> destinations = legalMovesWhenKingThreatened.get(p);
-                    for (int[] dest : destinations) {
+                    for (int[] dest : legalMovesWhenKingThreatened.get(p)) {
                         possibleMoveIndicators.get(String.valueOf(Utilities.int2Char(dest[0])) + dest[1]).setVisible(true);
                     }
                 } else {
@@ -127,7 +123,7 @@ public class ChessApplication extends Application {
                         char destX = Utilities.int2Char(dest[0]);
                         int  destY = dest[1];
                         boolean res = p.isLegalMove(destX, destY);
-                        if (res && !checkDumbMove(p,new int[]{ Utilities.char2Int(destX),destY})) possibleMoveIndicators.get(String.valueOf(destX) + destY).setVisible(true);
+                        if (res && !chessEngine.checkDumbMove(p,new int[]{ Utilities.char2Int(destX),destY})) possibleMoveIndicators.get(String.valueOf(destX) + destY).setVisible(true);
                     }
                 }
             }
@@ -140,7 +136,8 @@ public class ChessApplication extends Application {
                 int[] position = coordinatesToPosition((int) (event.getSceneX() - mouseX), (int) (event.getSceneY() - mouseY));
                 char posX = Utilities.int2Char(position[0]);
                 int posY = position[1];
-                if (!legalMovesWhenKingThreatened.isEmpty()){
+                HashMap<Pioni,ArrayList<int[]>> legalMovesWhenKingThreatened = chessEngine.kingCheckMate(p.isWhite);
+                if (legalMovesWhenKingThreatened != null && !legalMovesWhenKingThreatened.isEmpty()){
                     ArrayList<int[]> desiredMoves = legalMovesWhenKingThreatened.get(p);
                     if (desiredMoves != null && desiredMoves.stream().noneMatch(arr->arr[0] == position[0] && arr[1] == posY)) {
                         int[] orig = getCoordinates(p.getXPos(), p.getYPos());
@@ -150,7 +147,7 @@ public class ChessApplication extends Application {
                         return;
                     } else legalMovesWhenKingThreatened.clear();
                 }
-                if (checkDumbMove(p,new int[]{position[0],position[1]})){
+                if (chessEngine.checkDumbMove(p,new int[]{position[0],position[1]})){
                     int[] orig = getCoordinates(p.getXPos(), p.getYPos());
                     piece.setLayoutX(orig[0] - piece.getFitWidth() / 2);
                     piece.setLayoutY(orig[1] - piece.getFitHeight() / 2);
@@ -175,14 +172,14 @@ public class ChessApplication extends Application {
                 piece.setLayoutY(newCoordinates[1] - piece.getFitHeight() / 2);
                 playPiecePlacementSound();
                 boolean ended;
-                ended = chessEngine.kingCheckMate(!p.getIsWhite(),null);
+                HashMap<Pioni,ArrayList<int[]>> legalMovesWhenEnemyKingThreatened = chessEngine.kingCheckMate(!p.getIsWhite());
+                ended = legalMovesWhenEnemyKingThreatened != null;
                 if (ended){
                     showWinScreen(p.getIsWhite());
                     System.out.println((p.getIsWhite() ? "White" : "Black") + " won");
                 }
                 if (ChessEngine.checkKingMat(chessEngine.chessBoard, !p.getIsWhite())){
                     setKingCheckEffect(!p.getIsWhite());
-                    chessEngine.kingCheckMate(!p.getIsWhite(),legalMovesWhenKingThreatened);
                 }
             }
 
@@ -226,13 +223,6 @@ public class ChessApplication extends Application {
         mpartzokas.setLayoutY(textY + 50);
 
         root.getChildren().addAll(canvas, mpartzokas);
-    }
-
-
-    private boolean checkDumbMove(Pioni p, int[] dest){
-        ChessBoard testChessBoard = chessEngine.chessBoard.clone();
-        testChessBoard.move(p.getXPos(), p.getYPos(), Utilities.int2Char(dest[0]), dest[1]);
-        return ChessEngine.checkKingMat(testChessBoard,p.isWhite);
     }
 
 

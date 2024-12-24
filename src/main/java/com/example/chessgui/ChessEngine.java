@@ -1,9 +1,5 @@
 package com.example.chessgui;
 
-import javafx.scene.effect.DropShadow;
-import javafx.scene.image.ImageView;
-import javafx.scene.paint.Color;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.stream.Collectors;
@@ -53,7 +49,8 @@ public class ChessEngine {
         }
         return false;
     }
-    public boolean kingCheckMate(boolean white, HashMap<Pioni,ArrayList<int[]>> legalMovesWhenKingThreatened) {
+    public HashMap<Pioni,ArrayList<int[]>> kingCheckMate(boolean white) {
+        HashMap<Pioni,ArrayList<int[]>> legalMovesWhenKingThreatened = new HashMap<>();
         ArrayList<Pioni> duplicatePieces = chessBoard.getPionia().stream().filter(pioni -> pioni.getIsWhite() == white && !pioni.getCaptured()).collect(Collectors.toCollection(ArrayList::new));
         for (Pioni p : duplicatePieces) {
             for (int[] pos : allPositions) {
@@ -61,7 +58,7 @@ public class ChessEngine {
                 Pioni duplicatePioni = testChessBoard.getPioniAt(p.getXPos(), p.getYPos());
                 if (duplicatePioni.isLegalMove(Utilities.int2Char(pos[0]), pos[1])) {
                     testChessBoard.move(p.getXPos(), p.getYPos(), Utilities.int2Char(pos[0]), pos[1]);
-                    if (legalMovesWhenKingThreatened == null && !ChessEngine.checkKingMat(testChessBoard, white)) return false;
+                    if (!ChessEngine.checkKingMat(testChessBoard, white)) return null;
                     else if (!ChessEngine.checkKingMat(testChessBoard, white)) {
                         Pioni origPioni = chessBoard.getPioniAt(p.getXPos(), p.getYPos());
                         ArrayList<int[]> existingRoutes = legalMovesWhenKingThreatened.get(origPioni);
@@ -72,6 +69,12 @@ public class ChessEngine {
                 }
             }
         }
-        return true;
+        return legalMovesWhenKingThreatened;
+    }
+
+    public boolean checkDumbMove(Pioni p, int[] dest){
+        ChessBoard testChessBoard = chessBoard.clone();
+        testChessBoard.move(p.getXPos(), p.getYPos(), Utilities.int2Char(dest[0]), dest[1]);
+        return ChessEngine.checkKingMat(testChessBoard,p.isWhite);
     }
 }
