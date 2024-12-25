@@ -69,7 +69,7 @@ public class ChessBoard {
     public void printBoard(){
         System.out.println("   a  b  c  d  e  f  g  h  \n  ------------------------");
         for (int y = 8;y>=1;y--){
-            System.out.println(String.format("%d  %s  %s  %s  %s  %s  %s  %s  %s %d",y,
+            System.out.printf("%d  %s  %s  %s  %s  %s  %s  %s  %s %d%n",y,
                     this.getPioniAt('A',y) == null ? " " : this.getPioniAt('A',y).print(),
                     this.getPioniAt('B',y) == null ? " " : this.getPioniAt('B',y).print(),
                     this.getPioniAt('C',y) == null ? " " : this.getPioniAt('C',y).print(),
@@ -78,7 +78,7 @@ public class ChessBoard {
                     this.getPioniAt('F',y) == null ? " " : this.getPioniAt('F',y).print(),
                     this.getPioniAt('G',y) == null ? " " : this.getPioniAt('G',y).print(),
                     this.getPioniAt('H',y) == null ? " " : this.getPioniAt('H',y).print(),
-                    y));
+                    y);
         }
         System.out.println("  ------------------------\n   a  b  c  d  e  f  g  h");
 
