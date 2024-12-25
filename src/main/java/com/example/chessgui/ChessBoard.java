@@ -10,6 +10,12 @@ public class ChessBoard {
         p.setXPos(xPos);
         p.setYPos(yPos);
     }
+    public boolean isDangerousPosition(char xOrig, int yOrig, boolean white){
+        for (Pioni p : getPionia().stream().filter(pioni -> pioni.getIsWhite() != white).toList()) {
+            if (p.isLegalMove(xOrig,yOrig)) return true;
+        }
+        return false;
+    }
     public void loadBoard(){
         for (int x = 1;x<=16;x++){
             Pionia.add(new Stratiotis(x < 9,this,Utilities.int2Char(x < 9 ? x : x - 8 ),x < 9 ? 2 : 7));
@@ -51,15 +57,15 @@ public class ChessBoard {
     public void move(char xOrig, int yOrig, char xDest,int yDest){
         Pioni p = getPioniAt(xOrig,yOrig);
         Pioni pioniAtDestination = getPioniAt(xDest,yDest);
-        if (pioniAtDestination != null) capture(pioniAtDestination);
+        if (pioniAtDestination != null && p.getIsWhite() != pioniAtDestination.getIsWhite()) capture(pioniAtDestination);
         placePioniAt(p,xDest,yDest);
         if (p.type.equals("Pyrgos")) ((Pyrgos) p).setMoved(true);
         else if (p.type.equals("Vasilias")) ((Vasilias) p).setMoved(true);
-        whiteTurn = !whiteTurn;
     }
     public Boolean getWhiteTurn(){
         return whiteTurn;
     }
+    public void setWhiteTurn(boolean whiteTurn){ this.whiteTurn = whiteTurn; }
     public void printBoard(){
         System.out.println("   a  b  c  d  e  f  g  h  \n  ------------------------");
         for (int y = 8;y>=1;y--){

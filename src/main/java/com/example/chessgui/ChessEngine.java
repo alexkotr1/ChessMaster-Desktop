@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 public class ChessEngine {
     protected ChessBoard chessBoard = new ChessBoard();
+    private boolean gameEnded = false;
     ArrayList<int[]> allPositions = new ArrayList<>();
     public ChessEngine() {
         for (int x = 1;x<=8;x++) {
@@ -20,6 +21,7 @@ public class ChessEngine {
     }
     public boolean nextMove(char xOrig, int yOrig, char xDest, int yDest){
         Pioni p = chessBoard.getPioniAt(xOrig,yOrig);
+        Pioni pioniAtDest = chessBoard.getPioniAt(xDest,yDest);
         if (p == null) {
             System.out.println("There is no pioni at " + xOrig + " at " + yOrig);
             return false;
@@ -32,11 +34,45 @@ public class ChessEngine {
             System.out.println("Illegal move!");
             return false;
         }
-
+        chessBoard.setWhiteTurn(!chessBoard.getWhiteTurn());
+        if (p.type.equals("Vasilias") && pioniAtDest != null && pioniAtDest.type.equals("Pyrgos") && p.getIsWhite() == pioniAtDest.getIsWhite()){
+            int[] dest = pioniAtDest.getPosition();
+            int[] orig = p.getPosition();
+            chessBoard.move(xOrig,yOrig,Utilities.int2Char(dest[0] > orig[0] ? orig[0] + 2 : orig[0] - 2),yOrig);
+            chessBoard.move(Utilities.int2Char(dest[0]),dest[1],Utilities.int2Char(dest[0] > orig[0] ? orig[0] - 1 : orig[0] + 1),yOrig);
+            return true;
+        }
         chessBoard.move(xOrig,yOrig,xDest,yDest);
-        //chessBoard.printBoard();
+        chessBoard.printBoard();
         return true;
     }
+    public Pioni upgradePioni(Pioni p,String type){
+        if (p.type.equals("Stratiotis") && ((p.getIsWhite() && p.getYPos() == 8) || (!p.getIsWhite() && p.getYPos() == 1))) {
+            Pioni upgradedPioni;
+            switch (type) {
+                case "Alogo":
+                    upgradedPioni = new Alogo(p.isWhite, chessBoard, p.getXPos(), p.getYPos());
+                    break;
+                case "Pyrgos":
+                    upgradedPioni = new Pyrgos(p.isWhite, chessBoard, p.getXPos(), p.getYPos());
+                    break;
+                case "Stratigos":
+                    upgradedPioni = new Stratigos(p.isWhite, chessBoard, p.getXPos(), p.getYPos());
+                    break;
+                case "Vasilissa":
+                    upgradedPioni = new Vasilissa(p.isWhite, chessBoard, p.getXPos(), p.getYPos());
+                    break;
+                default:
+                    System.err.println("Something went wrong!");
+                    return null;
+            }
+            chessBoard.getPionia().remove(p);
+            chessBoard.getPionia().add(upgradedPioni);
+            return upgradedPioni;
+        }
+        return null;
+    }
+
     public static boolean checkKingMat(ChessBoard chessBoard, boolean white){
         Pioni allyKing = chessBoard.getPionia()
                 .stream()
@@ -56,20 +92,29 @@ public class ChessEngine {
             for (int[] pos : allPositions) {
                 ChessBoard testChessBoard = chessBoard.clone();
                 Pioni duplicatePioni = testChessBoard.getPioniAt(p.getXPos(), p.getYPos());
-                if (duplicatePioni.isLegalMove(Utilities.int2Char(pos[0]), pos[1])) {
-                    testChessBoard.move(p.getXPos(), p.getYPos(), Utilities.int2Char(pos[0]), pos[1]);
-                    if (!ChessEngine.checkKingMat(testChessBoard, white)) return null;
-                    else if (!ChessEngine.checkKingMat(testChessBoard, white)) {
-                        Pioni origPioni = chessBoard.getPioniAt(p.getXPos(), p.getYPos());
-                        ArrayList<int[]> existingRoutes = legalMovesWhenKingThreatened.get(origPioni);
-                        if (existingRoutes == null) existingRoutes = new ArrayList<>();
-                        existingRoutes.add(new int[]{ pos[0],pos[1] });
-                        legalMovesWhenKingThreatened.put(origPioni, existingRoutes);
-                    }
+                if (!duplicatePioni.isLegalMove(Utilities.int2Char(pos[0]), pos[1])) continue;
+                testChessBoard.move(p.getXPos(), p.getYPos(), Utilities.int2Char(pos[0]), pos[1]);
+                if (!ChessEngine.checkKingMat(testChessBoard, white)) {
+                    Pioni origPioni = chessBoard.getPioniAt(p.getXPos(), p.getYPos());
+                    ArrayList<int[]> existingRoutes = legalMovesWhenKingThreatened.get(origPioni);
+                    if (existingRoutes == null) existingRoutes = new ArrayList<>();
+                    existingRoutes.add(new int[]{ pos[0],pos[1] });
+                    legalMovesWhenKingThreatened.put(origPioni, existingRoutes);
                 }
             }
         }
         return legalMovesWhenKingThreatened;
+    }
+    public boolean stalemateCheck(boolean white) {
+        ArrayList<Pioni> duplicatePieces = chessBoard.getPionia().stream().filter(pioni -> pioni.getIsWhite() == white && !pioni.getCaptured()).collect(Collectors.toCollection(ArrayList::new));
+        for (Pioni p : duplicatePieces) {
+            for (int[] pos : allPositions) {
+                if (p.isLegalMove(Utilities.int2Char(pos[0]), pos[1]) && !checkDumbMove(p,pos)) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     public boolean checkDumbMove(Pioni p, int[] dest){
@@ -77,4 +122,6 @@ public class ChessEngine {
         testChessBoard.move(p.getXPos(), p.getYPos(), Utilities.int2Char(dest[0]), dest[1]);
         return ChessEngine.checkKingMat(testChessBoard,p.isWhite);
     }
+    public void setGameEnded(boolean gameEnded) { this.gameEnded = gameEnded; }
+    public boolean getGameEnded() { return gameEnded;}
 }

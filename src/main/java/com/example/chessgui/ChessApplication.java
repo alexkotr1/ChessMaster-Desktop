@@ -1,14 +1,20 @@
 package com.example.chessgui;
 
 import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.control.Label;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
+import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
 import javax.sound.sampled.AudioInputStream;
@@ -19,26 +25,25 @@ import java.io.BufferedInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.concurrent.CompletableFuture;
 
 
 public class ChessApplication extends Application {
-    private HashMap<Pioni, ImageView> pieces = new HashMap<>();
+    private final HashMap<Pioni, ImageView> pieces = new HashMap<>();
     private double mouseX;
     private double mouseY;
     private final DropShadow whiteTurnEffect = new DropShadow();
     private final DropShadow blackTurnEffect = new DropShadow();
     private ChessEngine chessEngine;
-    HashMap<String,ImageView> possibleMoveIndicators = new HashMap<>();
-    ArrayList<int[]> allPositions = new ArrayList<>();
-    Stage stage;
-    AnchorPane root;
+    private final HashMap<String,ImageView> possibleMoveIndicators = new HashMap<>();
+    private final ArrayList<int[]> allPositions = new ArrayList<>();
+    private AnchorPane root;
     private final int tile = 90;
     private final int offBoundsEnd = 40;
     public ChessApplication() {}
 
     @Override
     public void start(Stage stage) {
-        this.stage = stage;
         AnchorPane root = new AnchorPane();
         this.root = root;
         ImageView background = new ImageView(new Image("chessBoard.jpeg"));
@@ -107,8 +112,9 @@ public class ChessApplication extends Application {
             mouseX = event.getSceneX() - piece.getLayoutX();
             mouseY = event.getSceneY() - piece.getLayoutY();
         });
-        piece.setOnDragDetected(_ -> {
-            if (chessEngine.chessBoard.getWhiteTurn() != p.getIsWhite()) return;
+
+        piece.setOnDragDetected(c -> {
+            if (chessEngine.chessBoard.getWhiteTurn() != p.getIsWhite() || chessEngine.getGameEnded()) return;
             HashMap<Pioni,ArrayList<int[]>> legalMovesWhenKingThreatened = chessEngine.kingCheckMate(p.isWhite);
             if (legalMovesWhenKingThreatened != null && !legalMovesWhenKingThreatened.isEmpty()){
                 if (legalMovesWhenKingThreatened.get(p) == null) return;
@@ -126,7 +132,7 @@ public class ChessApplication extends Application {
         });
 
         piece.setOnMouseDragged(event -> {
-            if (chessEngine.chessBoard.getWhiteTurn() != p.getIsWhite()) return;
+            if (chessEngine.chessBoard.getWhiteTurn() != p.getIsWhite() || chessEngine.getGameEnded()) return;
             piece.setEffect(null);
             piece.setLayoutX(event.getSceneX() - mouseX);
             piece.setLayoutY(event.getSceneY() - mouseY);
@@ -144,45 +150,65 @@ public class ChessApplication extends Application {
             if (legalMovesWhenKingThreatened != null && !legalMovesWhenKingThreatened.isEmpty()){
                 ArrayList<int[]> desiredMoves = legalMovesWhenKingThreatened.get(p);
                 if (desiredMoves != null && desiredMoves.stream().noneMatch(arr->arr[0] == position[0] && arr[1] == posY)) {
-                    int[] orig = getCoordinates(p.getXPos(), p.getYPos());
-                    piece.setLayoutX(orig[0] - piece.getFitWidth() / 2);
-                    piece.setLayoutY(orig[1] - piece.getFitHeight() / 2);
-                    piece.setEffect(p.isWhite ? whiteTurnEffect : blackTurnEffect);
-                    return;
+                    resetToOriginalPosition(p, piece);
                 } else legalMovesWhenKingThreatened.clear();
             }
             if (chessEngine.checkDumbMove(p,new int[]{position[0],position[1]})){
-                int[] orig = getCoordinates(p.getXPos(), p.getYPos());
-                piece.setLayoutX(orig[0] - piece.getFitWidth() / 2);
-                piece.setLayoutY(orig[1] - piece.getFitHeight() / 2);
-                piece.setEffect(p.isWhite ? whiteTurnEffect : blackTurnEffect);
+                resetToOriginalPosition(p, piece);
                 return;
             }
+            Pioni pioniAtDest = chessEngine.chessBoard.getPioniAt(posX, posY);
             boolean res = chessEngine.nextMove(p.getXPos(), p.getYPos(), posX, posY);
             if (!res) {
-                int[] orig = getCoordinates(p.getXPos(), p.getYPos());
-                piece.setLayoutX(orig[0] - piece.getFitWidth() / 2);
-                piece.setLayoutY(orig[1] - piece.getFitHeight() / 2);
-                piece.setEffect(p.isWhite ? whiteTurnEffect : blackTurnEffect);
+                resetToOriginalPosition(p, piece);
                 return;
+            }
+            int[] newCoordinates = getCoordinates(posX, posY);
+            if (p.type.equals("Vasilias") && pioniAtDest != null && pioniAtDest.type.equals("Pyrgos") && p.getIsWhite() == pioniAtDest.getIsWhite()){
+                newCoordinates = getCoordinates(p.getXPos(), p.getYPos());
+                ImageView destPioniImageView = pieces.get(pioniAtDest);
+                int[] destPioniCoordinates = getCoordinates(pioniAtDest.getXPos(), pioniAtDest.getYPos());
+                destPioniImageView.setLayoutX(destPioniCoordinates[0] - destPioniImageView.getFitWidth() / 2);
+                destPioniImageView.setLayoutY(destPioniCoordinates[1] - destPioniImageView.getFitHeight() / 2);
+                piece.setLayoutX(newCoordinates[0] - piece.getFitWidth() / 2);
+                piece.setLayoutY(newCoordinates[1] - piece.getFitHeight() / 2);
+            } else {
+                piece.setLayoutX(newCoordinates[0] - piece.getFitWidth() / 2);
+                piece.setLayoutY(newCoordinates[1] - piece.getFitHeight() / 2);
             }
             for (Pioni pioni : pieces.keySet()) {
                 if (pioni.getCaptured()) pieces.get(pioni).setVisible(false);
             }
-            int[] newCoordinates = getCoordinates(posX, posY);
+            if (p.type.equals("Stratiotis") && ((p.getIsWhite() && p.getYPos() == 8) || (!p.getIsWhite() && p.getYPos() == 1))) {
+                selectUpgrade(p.getIsWhite()).thenAccept(selection ->{
+                    Pioni upgraded = chessEngine.upgradePioni(p,selection);
+                    if (upgraded != null) {
+                        root.getChildren().remove(pieces.get(p));
+                        addPiece(root, upgraded);
+                    }
+                });
+            }
             switchTurnAnimation(p.getIsWhite());
-
-            piece.setLayoutX(newCoordinates[0] - piece.getFitWidth() / 2);
-            piece.setLayoutY(newCoordinates[1] - piece.getFitHeight() / 2);
             playPiecePlacementSound();
-            HashMap<Pioni,ArrayList<int[]>> legalMovesWhenEnemyKingThreatened = chessEngine.kingCheckMate(!p.getIsWhite());
-            if (legalMovesWhenEnemyKingThreatened != null) showWinScreen(p.getIsWhite());
-            if (ChessEngine.checkKingMat(chessEngine.chessBoard, !p.getIsWhite())) setKingCheckEffect(!p.getIsWhite());
-
+            if (ChessEngine.checkKingMat(chessEngine.chessBoard,!p.getIsWhite())){
+                setKingCheckEffect(!p.getIsWhite());
+                HashMap<Pioni,ArrayList<int[]>> legalMovesWhenEnemyKingThreatened = chessEngine.kingCheckMate(!p.getIsWhite());
+                if (legalMovesWhenEnemyKingThreatened == null || legalMovesWhenEnemyKingThreatened.isEmpty()) {
+                    showWinScreen(p.getIsWhite());
+                    chessEngine.setGameEnded(true);
+                }
+            } else if (chessEngine.stalemateCheck(!p.getIsWhite())) showWinScreen(null);
         });
         switchTurnAnimation(p.getIsWhite());
         pieces.put(p, piece);
         root.getChildren().add(piece);
+    }
+
+    private void resetToOriginalPosition(Pioni p, ImageView piece) {
+        int[] orig = getCoordinates(p.getXPos(), p.getYPos());
+        piece.setLayoutX(orig[0] - piece.getFitWidth() / 2);
+        piece.setLayoutY(orig[1] - piece.getFitHeight() / 2);
+        piece.setEffect(p.isWhite ? whiteTurnEffect : blackTurnEffect);
     }
 
     private int[] getCoordinates(char x, int y) {
@@ -197,28 +223,106 @@ public class ChessApplication extends Application {
         position[1] = Math.abs(y - tile*8) / tile + 1;
         return position;
     }
-    private void showWinScreen(boolean winnerIsWhite) {
-        Canvas canvas = new Canvas(800, 600);
-        GraphicsContext gc = canvas.getGraphicsContext2D();
+    private void showWinScreen(Boolean winnerIsWhite) {
+        Pane winScreen = new Pane();
+        winScreen.setPrefSize(root.getWidth(), root.getHeight());
 
-        gc.setFill(Color.TRANSPARENT);
-        gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
-        gc.setFill(Color.BLACK);
-        gc.setFont(javafx.scene.text.Font.font("Arial", 40));
+        String backgroundColor = winnerIsWhite == null ? "rgba(128, 128, 128, 0.8)" : "rgba(32, 32, 32, 0.8)";
+        winScreen.setStyle("-fx-background-color: " + backgroundColor + ";");
 
-        String text = (winnerIsWhite ? "White" : "Black") + " won!";
-        double textWidth = gc.getFont().getSize() * text.length() / 2.5;
-        double textX = (canvas.getWidth() - textWidth) / 2;
-        double textY = canvas.getHeight() / 3;
-        gc.fillText(text, textX, textY);
+        Color value = winnerIsWhite == null ? Color.GOLD : Color.WHITE;
 
-        ImageView mpartzokas = new ImageView(new Image("mpartzokas.png"));
-        mpartzokas.setFitWidth(300);
-        mpartzokas.setPreserveRatio(true);
-        mpartzokas.setLayoutX((canvas.getWidth() - mpartzokas.getFitWidth()) / 2);
-        mpartzokas.setLayoutY(textY + 50);
+        Rectangle border = new Rectangle(600, 400);
+        border.setArcWidth(20);
+        border.setArcHeight(20);
+        border.setFill(Color.TRANSPARENT);
+        border.setStroke(value);
+        border.setStrokeWidth(5);
+        border.setLayoutX((winScreen.getPrefWidth() - border.getWidth()) / 2);
+        border.setLayoutY((winScreen.getPrefHeight() - border.getHeight()) / 2);
 
-        root.getChildren().addAll(canvas, mpartzokas);
+        Label winnerLabel = new Label();
+        winnerLabel.setFont(Font.font("Arial", 60));
+        winnerLabel.setTextFill(value);
+        winnerLabel.setText(winnerIsWhite == null ? "It's a Tie!" : (winnerIsWhite ? "White Wins!" : "Black Wins!"));
+        winnerLabel.setLayoutX((winScreen.getPrefWidth() - winnerLabel.getWidth()) / 2);
+        winnerLabel.setLayoutY(border.getLayoutY() + (border.getHeight() - winnerLabel.getHeight()) / 6);
+
+        Image kingIcon = new Image(winnerIsWhite != null && winnerIsWhite ? "white king.png" : "black king.png");
+        ImageView kingIconView = new ImageView(kingIcon);
+        kingIconView.setFitWidth(100);
+        kingIconView.setFitHeight(100);
+        kingIconView.setPreserveRatio(true);
+        kingIconView.setLayoutX(border.getLayoutX() + (border.getWidth() - kingIconView.getFitWidth()) / 2);
+        kingIconView.setLayoutY(border.getLayoutY() + (border.getHeight() - kingIconView.getFitHeight()) / 1.5);
+
+        winScreen.getChildren().addAll(border, kingIconView, winnerLabel);
+        
+        root.getChildren().add(winScreen);
+        
+        Platform.runLater(() -> {
+            double centerX = (winScreen.getWidth() - winnerLabel.getWidth()) / 2;
+            winnerLabel.setLayoutX(centerX);
+        });
+    }
+
+
+
+
+    private CompletableFuture<String> selectUpgrade(boolean white) {
+        CompletableFuture<String> selection = new CompletableFuture<>();
+
+        Label promptLabel = new Label("Select an Option:");
+        promptLabel.setFont(Font.font("Arial", 24));
+        promptLabel.setTextFill(Color.WHITE);
+
+        HBox optionsBox = new HBox(20);
+        optionsBox.setAlignment(Pos.CENTER);
+
+        VBox centerBox = new VBox(20, promptLabel, optionsBox);
+        centerBox.setAlignment(Pos.CENTER);
+        String backgroundColor = white ? "rgba(0, 0, 0, 0.7)" : "rgba(255, 255, 255, 0.8)";
+        String borderColor = white ? "gold" : "black";
+        centerBox.setStyle("-fx-background-color: " + backgroundColor + "; " +
+                "-fx-padding: 20; " +
+                "-fx-border-color: " + borderColor + "; " +
+                "-fx-border-width: 3; " +
+                "-fx-border-radius: 10; " +
+                "-fx-background-radius: 10;");
+        HashMap<String, String> imagePaths = new HashMap<>();
+        chessEngine.chessBoard.getPionia()
+                .stream()
+                .filter(pioni -> pioni.getIsWhite() == white)
+                .forEach(pioni -> {
+                    if (pioni.type.equals("Alogo") || pioni.type.equals("Pyrgos") || pioni.type.equals("Stratigos") || pioni.type.equals("Vasilissa")) {
+                        imagePaths.put(pioni.type, pioni.getImagePath());
+                    }
+                });
+
+        imagePaths.forEach((type, path) -> {
+            Image image = new Image(path);
+            ImageView imageView = new ImageView(image);
+            imageView.setFitWidth(100);
+            imageView.setFitHeight(100);
+            imageView.setPreserveRatio(true);
+            imageView.setStyle("-fx-cursor: hand;");
+
+            imageView.setOnMouseClicked(event -> {
+                selection.complete(type);
+                root.getChildren().remove(centerBox);
+            });
+
+            optionsBox.getChildren().add(imageView);
+        });
+
+        root.getChildren().add(centerBox);
+
+        Platform.runLater(() -> {
+            centerBox.setLayoutX((root.getWidth() - centerBox.getWidth()) / 2);
+            centerBox.setLayoutY((root.getHeight() - centerBox.getHeight()) / 2);
+        });
+
+        return selection;
     }
 
 
@@ -267,13 +371,13 @@ public class ChessApplication extends Application {
                     try {
                         audioStream.close();
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        System.err.println(e.getMessage());
                     }
                 }
             });
 
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println(e.getMessage());
         }
     }
 }
