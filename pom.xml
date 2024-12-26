@@ -130,7 +130,6 @@
                 <version>0.0.8</version>
                 <executions>
                     <execution>
-                        <!-- Default configuration for running with: mvn clean javafx:run -->
                         <id>default-cli</id>
                         <configuration>
                             <mainClass>com.example.chessgui.ChessApplication</mainClass>
@@ -170,12 +169,9 @@
                                 <productName>Chess</productName>
                                 <originalFilename>chess.exe</originalFilename>
                                 <exeCreationTool>winrun4j</exeCreationTool>
-
-                                <!-- setup generation properties -->
                                 <setupMode>installForAllUsers</setupMode>
                                 <createDesktopIconTask>true</createDesktopIconTask>
                                 <removeOldLibs>true</removeOldLibs>
-
                             </winConfig>
                         </configuration>
                     </execution>
