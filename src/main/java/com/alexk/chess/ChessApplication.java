@@ -5,6 +5,7 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.image.Image;
@@ -51,15 +52,20 @@ public class ChessApplication extends Application {
     private long blackPauseTime = 0;
     private final int minutesAllowed = 600;
     private Label winnerLabel;
+    private Button playAgain;
     private AnchorPane rightPanel;
+    private Stage stage;
     public ChessApplication() {}
 
 
     @Override
     public void start(Stage stage) {
-        AnchorPane root = new AnchorPane();
+        this.stage = stage;
+        initialize();
+    }
+    private void initialize() {
+        root = new AnchorPane();
         rightPanel = new AnchorPane();
-        this.root = root;
 
         ImageView background = new ImageView(new Image("chessBoard.jpeg"));
         background.setFitWidth(800);
@@ -93,6 +99,7 @@ public class ChessApplication extends Application {
                         "-fx-border-width: 3;" +
                         "-fx-border-style: solid inside;"
         );
+
         for (int x = 0;x<4;x++){
             HBox hbox = new HBox();
             hbox.setLayoutX(0);
@@ -127,6 +134,22 @@ public class ChessApplication extends Application {
         winnerLabel = new Label("");
         winnerLabel.setVisible(false);
 
+        playAgain = new Button("Play Again!");
+        playAgain.setFont(Font.font("Arial", FontWeight.BOLD, 20));
+        playAgain.setStyle("-fx-background-color: linear-gradient(to bottom, #F0D09F, #3F2C0E);");
+        playAgain.setTextFill(Color.web("#F0D09F"));
+        playAgain.setVisible(false);
+        playAgain.setOnAction(event -> {
+            whiteTimerRunning = false;
+            whiteTimerStartTime = 0;
+            whitePauseTime = 0;
+            blackTimerRunning = false;
+            blackTimerStartTime = 0;
+            blackPauseTime = 0;
+            initialize();
+        });
+
+
         Label whiteTimerlabel = new Label();
         whiteTimerlabel.setText("White Time:");
         whiteTimerlabel.setFont(Font.font("Arial", FontWeight.BOLD, 20));
@@ -139,6 +162,8 @@ public class ChessApplication extends Application {
                 "-fx-border-color: #F0D09F;");
         whiteTimerlabel.setLayoutX(50);
         whiteTimerlabel.setLayoutY(blackCapturedPawns.getLayoutY() - 50);
+
+
 
         AnimationTimer whiteTimer = new AnimationTimer() {
             @Override
@@ -299,12 +324,9 @@ public class ChessApplication extends Application {
                 int[] destPioniCoordinates = getCoordinates(pioniAtDest.getXPos(), pioniAtDest.getYPos());
                 destPioniImageView.setLayoutX(destPioniCoordinates[0] - destPioniImageView.getFitWidth() / 2);
                 destPioniImageView.setLayoutY(destPioniCoordinates[1] - destPioniImageView.getFitHeight() / 2);
-                piece.setLayoutX(newCoordinates[0] - piece.getFitWidth() / 2);
-                piece.setLayoutY(newCoordinates[1] - piece.getFitHeight() / 2);
-            } else {
-                piece.setLayoutX(newCoordinates[0] - piece.getFitWidth() / 2);
-                piece.setLayoutY(newCoordinates[1] - piece.getFitHeight() / 2);
             }
+            piece.setLayoutX(newCoordinates[0] - piece.getFitWidth() / 2);
+            piece.setLayoutY(newCoordinates[1] - piece.getFitHeight() / 2);
             for (Pioni pioni : pieces.keySet()) {
                 if (pioni.getCaptured()) {
                     pieces.get(pioni).setVisible(false);
@@ -429,13 +451,14 @@ public class ChessApplication extends Application {
         winnerLabel.setVisible(true);
 
         rightPanel.getChildren().clear();
-        rightPanel.getChildren().add(winnerLabel);
+        rightPanel.getChildren().addAll(winnerLabel,playAgain);
 
+        playAgain.setVisible(true);
         Platform.runLater(() -> {
-            double centerX = (rightPanel.getPrefWidth() - winnerLabel.getWidth()) / 2;
-            double centerY = (rightPanel.getPrefHeight() - winnerLabel.getHeight()) / 2;
-            winnerLabel.setLayoutX(centerX);
-            winnerLabel.setLayoutY(centerY);
+            winnerLabel.setLayoutX((rightPanel.getPrefWidth() - winnerLabel.getWidth()) / 2);
+            winnerLabel.setLayoutY((rightPanel.getPrefHeight() - winnerLabel.getHeight()) / 2);
+            playAgain.setLayoutX((rightPanel.getPrefWidth() - playAgain.getWidth()) / 2);
+            playAgain.setLayoutY(winnerLabel.getLayoutY() + winnerLabel.getHeight() + 30);
         });
     }
 

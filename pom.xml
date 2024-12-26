@@ -161,13 +161,15 @@
                             <platform>windows</platform>
                             <winConfig>
                                 <generateSetup>true</generateSetup>
-                                <generateMsi>true</generateMsi>
+                                <generateMsi>false</generateMsi>
                                 <headerType>gui</headerType>
+                                <icoFile>src/main/resources/icon.ico</icoFile>
                                 <wrapJar>false</wrapJar>
                                 <fileVersion>1.0.0.0</fileVersion>
                                 <productVersion>1.0.0.0</productVersion>
                                 <productName>Chess</productName>
                                 <originalFilename>chess.exe</originalFilename>
+                                <copyright>AlexK</copyright>
                                 <exeCreationTool>winrun4j</exeCreationTool>
                                 <setupMode>installForAllUsers</setupMode>
                                 <createDesktopIconTask>true</createDesktopIconTask>

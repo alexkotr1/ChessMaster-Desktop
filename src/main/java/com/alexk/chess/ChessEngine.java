@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.stream.Collectors;
 
 public class ChessEngine {
-    protected ChessBoard chessBoard = new ChessBoard();
+    protected final ChessBoard chessBoard = new ChessBoard();
     private boolean gameEnded = false;
     ArrayList<int[]> allPositions = new ArrayList<>();
     public ChessEngine() {

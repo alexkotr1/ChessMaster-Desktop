@@ -140,7 +140,7 @@ public abstract class Pioni {
             return;
         }
         for (int i = 0;i<route.size();i++){
-            System.out.println(String.format("%d:[%c,%s]",i,Utilities.int2Char(route.get(i)[0]),route.get(i)[1]));
+            System.out.printf("%d:[%c,%s]%n",i,Utilities.int2Char(route.get(i)[0]),route.get(i)[1]);
         }
     }
     @Override
