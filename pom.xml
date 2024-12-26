@@ -4,10 +4,10 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.example</groupId>
-    <artifactId>ChessGUI</artifactId>
+    <groupId>com.alexk</groupId>
+    <artifactId>Chess</artifactId>
     <version>1.0-SNAPSHOT</version>
-    <name>ChessGUI</name>
+    <name>Chess</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -132,7 +132,7 @@
                     <execution>
                         <id>default-cli</id>
                         <configuration>
-                            <mainClass>com.example.chessgui.ChessApplication</mainClass>
+                            <mainClass>com.alexk.chess.ChessApplication</mainClass>
                             <launcher>app</launcher>
                             <jlinkZipName>app</jlinkZipName>
                             <jlinkImageName>app</jlinkImageName>
@@ -154,7 +154,7 @@
                             <goal>package</goal>
                         </goals>
                         <configuration>
-                            <mainClass>com.example.chessgui.ChessApplication</mainClass>
+                            <mainClass>com.alexk.chess.ChessApplication</mainClass>
                             <bundleJre>true</bundleJre>
                             <generateInstaller>true</generateInstaller>
                             <administratorRequired>false</administratorRequired>

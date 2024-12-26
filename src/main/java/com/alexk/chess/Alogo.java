@@ -1,4 +1,4 @@
-package com.example.chessgui;
+package com.alexk.chess;
 
 import java.util.Arrays;
 

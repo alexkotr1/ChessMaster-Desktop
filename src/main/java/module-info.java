@@ -1,4 +1,4 @@
-module com.example.chessgui {
+module com.alexk.chessgui {
     requires javafx.fxml;
     requires javafx.web;
 
@@ -12,6 +12,6 @@ module com.example.chessgui {
     requires java.desktop;
     requires javafx.media;
 
-    opens com.example.chessgui to javafx.fxml;
-    exports com.example.chessgui;
+    opens com.alexk.chess to javafx.fxml;
+    exports com.alexk.chess;
 }

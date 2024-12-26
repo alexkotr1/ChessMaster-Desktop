@@ -1,4 +1,4 @@
-package com.example.chessgui;
+package com.alexk.chess;
 
 
 public class Utilities {
