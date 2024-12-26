@@ -405,7 +405,8 @@ public class ChessApplication extends Application {
                 showWinScreen(p.getIsWhite());
                 chessEngine.setGameEnded(true);
             }
-        } else if (chessEngine.stalemateCheck(!p.getIsWhite())) showWinScreen(null);
+        } else if (chessEngine.stalemateCheck(!p.getIsWhite()) || chessEngine.chessBoard.getMovesRemaining() == 0) showWinScreen(null);
+        System.out.println(chessEngine.chessBoard.getMovesRemaining());
     }
 
     private void resetToOriginalPosition(Pioni p, ImageView piece) {
@@ -587,7 +588,5 @@ public class ChessApplication extends Application {
         } catch (Exception e) {
             System.err.println(e.getMessage());
         }
-
     }
-
 }

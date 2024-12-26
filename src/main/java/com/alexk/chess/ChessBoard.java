@@ -5,6 +5,7 @@ import java.util.ArrayList;
 public class ChessBoard {
     private final ArrayList<Pioni> Pionia = new ArrayList<>();
     private boolean whiteTurn = true;
+    private int movesRemaining = 100;
 
     public void placePioniAt(Pioni p, char xPos, int yPos){
         p.setXPos(xPos);
@@ -55,9 +56,14 @@ public class ChessBoard {
         return Pionia;
     }
     public void move(char xOrig, int yOrig, char xDest,int yDest){
+        movesRemaining--;
         Pioni p = getPioniAt(xOrig,yOrig);
         Pioni pioniAtDestination = getPioniAt(xDest,yDest);
-        if (pioniAtDestination != null && p.getIsWhite() != pioniAtDestination.getIsWhite()) capture(pioniAtDestination);
+        if (pioniAtDestination != null && p.getIsWhite() != pioniAtDestination.getIsWhite()) {
+            capture(pioniAtDestination);
+            movesRemaining = 100;
+        }
+        if (p.type.equals("Stratiotis")) movesRemaining = 100;
         placePioniAt(p,xDest,yDest);
         if (p.type.equals("Pyrgos")) ((Pyrgos) p).setMoved(true);
         else if (p.type.equals("Vasilias")) ((Vasilias) p).setMoved(true);
@@ -66,6 +72,8 @@ public class ChessBoard {
         return whiteTurn;
     }
     public void setWhiteTurn(boolean whiteTurn){ this.whiteTurn = whiteTurn; }
+    public void setMovesRemaining(int movesRemaining){ this.movesRemaining = movesRemaining; }
+    public int getMovesRemaining(){ return movesRemaining; }
     public void printBoard(){
         System.out.println("   a  b  c  d  e  f  g  h  \n  ------------------------");
         for (int y = 8;y>=1;y--){
