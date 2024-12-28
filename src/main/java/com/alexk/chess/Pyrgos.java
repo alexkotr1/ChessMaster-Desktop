@@ -1,8 +1,9 @@
 package com.alexk.chess;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
-public class Pyrgos extends Pioni {
+public class Pyrgos extends Pioni implements Serializable {
 private boolean moved;
 
     public Pyrgos(Boolean isWhite, ChessBoard chessBoard, char initialX, int initialY) {

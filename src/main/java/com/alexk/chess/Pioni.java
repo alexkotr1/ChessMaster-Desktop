@@ -1,15 +1,20 @@
 package com.alexk.chess;
 
+import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Objects;
+import java.util.UUID;
 
-public abstract class Pioni {
+public abstract class Pioni implements Serializable {
     protected boolean isWhite;
     protected String type;
     protected int[] position = new int[2];
     protected ChessBoard chessBoard;
+    private final String id;
     private String imagePath;
     private boolean captured;
     public Pioni(Boolean isWhite, ChessBoard chessBoard, char initialX, int initialY) {
+        id = UUID.randomUUID().toString();;
         position[0] = Utilities.char2Int(initialX);
         position[1] = initialY;
         this.type = this.getClass().getSimpleName();
@@ -134,6 +139,7 @@ public abstract class Pioni {
     public String getImagePath(){ return imagePath; }
     public void setCaptured(Boolean captured){ this.captured = captured; }
     public Boolean getCaptured(){ return captured; }
+    public String getID(){ return id; }
     public static void printRoute(ArrayList<int[]> route){
         if (route == null || route.isEmpty()) {
             System.out.println("Null or empty route");
@@ -159,5 +165,18 @@ public abstract class Pioni {
         } catch (Exception e) {
             throw new AssertionError("Clone operation failed", e);
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Pioni p = (Pioni) o;
+        return type.equals(p.type) && getIsWhite() == p.getIsWhite() && getXPos() == p.getXPos() && p.getYPos() == getYPos();
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, type, isWhite);
     }
 }

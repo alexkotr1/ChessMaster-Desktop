@@ -36,7 +36,6 @@ public class ChessApplication extends Application {
     private double mouseY;
     private final DropShadow whiteTurnEffect = new DropShadow();
     private final DropShadow blackTurnEffect = new DropShadow();
-    private ChessEngine chessEngine;
     private final HashMap<String, ImageView> possibleMoveIndicators = new HashMap<>();
     private final ArrayList<int[]> allPositions = new ArrayList<>();
     private AnchorPane root;
@@ -55,7 +54,12 @@ public class ChessApplication extends Application {
     private Button playAgain;
     private AnchorPane rightPanel;
     private Stage stage;
-    public ChessApplication() {}
+    private Proxy proxy;
+    private ChessEngine chessEngine;
+    private boolean offlineMode;
+
+    public ChessApplication() {
+    }
 
 
     @Override
@@ -63,9 +67,12 @@ public class ChessApplication extends Application {
         this.stage = stage;
         initialize();
     }
+
     private void initialize() {
         root = new AnchorPane();
         rightPanel = new AnchorPane();
+        proxy = new Proxy(offlineMode);
+        chessEngine = proxy.chessEngine;
 
         ImageView background = new ImageView(new Image("chessBoard.jpeg"));
         background.setFitWidth(800);
@@ -100,12 +107,12 @@ public class ChessApplication extends Application {
                         "-fx-border-style: solid inside;"
         );
 
-        for (int x = 0;x<4;x++){
+        for (int x = 0; x < 4; x++) {
             HBox hbox = new HBox();
             hbox.setLayoutX(0);
             hbox.setLayoutY(0);
             hbox.setPrefWidth(170);
-            hbox.setPrefHeight(180/4);
+            hbox.setPrefHeight(180 / 4);
             hbox.setStyle("-fx-background-color: linear-gradient(to bottom, #F0D09F, #3F2C0E);");
             whiteCapturedPawns.getChildren().add(hbox);
         }
@@ -122,12 +129,12 @@ public class ChessApplication extends Application {
                         "-fx-border-width: 3;" +
                         "-fx-border-style: solid inside;"
         );
-        for (int x = 0;x<4;x++){
+        for (int x = 0; x < 4; x++) {
             HBox hbox = new HBox();
             hbox.setLayoutX(0);
             hbox.setLayoutY(0);
             hbox.setPrefWidth(170);
-            hbox.setPrefHeight(180/4);
+            hbox.setPrefHeight(180 / 4);
             hbox.setStyle("-fx-background-color: linear-gradient(to bottom, #3F2C0E, #F0D09F );");
             blackCapturedPawns.getChildren().add(hbox);
         }
@@ -164,7 +171,6 @@ public class ChessApplication extends Application {
         whiteTimerlabel.setLayoutY(blackCapturedPawns.getLayoutY() - 50);
 
 
-
         AnimationTimer whiteTimer = new AnimationTimer() {
             @Override
             public void handle(long now) {
@@ -172,8 +178,8 @@ public class ChessApplication extends Application {
                     long elapsedTime = (now - whiteTimerStartTime + whitePauseTime) / 1_000_000_000;
                     long remainingTime = minutesAllowed - elapsedTime;
                     if (remainingTime <= 0) {
-                        chessEngine.setGameEnded(true);
-                        showWinScreen(false);
+                        chessEngine.setGameEnded(true, ChessEngine.Winner.Black);
+                        showWinScreen();
                     }
                     long minutes = remainingTime / 60;
                     long seconds = remainingTime % 60;
@@ -202,8 +208,8 @@ public class ChessApplication extends Application {
                     long elapsedTime = (now - blackTimerStartTime + blackPauseTime) / 1_000_000_000;
                     long remainingTime = minutesAllowed - elapsedTime;
                     if (remainingTime <= 0) {
-                        chessEngine.setGameEnded(true);
-                        showWinScreen(true);
+                        chessEngine.setGameEnded(true, ChessEngine.Winner.White);
+                        showWinScreen();
                     }
                     long minutes = remainingTime / 60;
                     long seconds = remainingTime % 60;
@@ -212,12 +218,9 @@ public class ChessApplication extends Application {
             }
         };
         blackTimer.start();
-        rightPanel.getChildren().addAll(whiteCapturedPawns,blackCapturedPawns,whiteTimerlabel,blackTimerLabel,winnerLabel);
+        rightPanel.getChildren().addAll(whiteCapturedPawns, blackCapturedPawns, whiteTimerlabel, blackTimerLabel, winnerLabel);
 
         root.getChildren().addAll(background, rightPanel);
-
-        chessEngine = new ChessEngine();
-        chessEngine.playChess();
 
         ArrayList<Pioni> Pionia = chessEngine.chessBoard.getPionia();
         for (Pioni p : Pionia) {
@@ -252,6 +255,7 @@ public class ChessApplication extends Application {
         blackTimerRunning = false;
         blackTimer.start();
     }
+
     private void addPiece(AnchorPane root, Pioni p) {
         int[] coordinates = getCoordinates(p.getXPos(), p.getYPos());
         ImageView piece = new ImageView(new Image(p.getImagePath()));
@@ -267,20 +271,10 @@ public class ChessApplication extends Application {
         });
 
         piece.setOnDragDetected(c -> {
-            if (chessEngine.chessBoard.getWhiteTurn() != p.getIsWhite() || chessEngine.getGameEnded()) return;
-            HashMap<Pioni,ArrayList<int[]>> legalMovesWhenKingThreatened = chessEngine.kingCheckMate(p.isWhite);
-            if (legalMovesWhenKingThreatened != null && !legalMovesWhenKingThreatened.isEmpty()){
-                if (legalMovesWhenKingThreatened.get(p) == null) return;
-                for (int[] dest : legalMovesWhenKingThreatened.get(p)) {
-                    possibleMoveIndicators.get(String.valueOf(Utilities.int2Char(dest[0])) + dest[1]).setVisible(true);
-                }
-            } else {
-                for (int[] dest : allPositions) {
-                    char destX = Utilities.int2Char(dest[0]);
-                    int  destY = dest[1];
-                    boolean res = p.isLegalMove(destX, destY);
-                    if (res && !chessEngine.checkDumbMove(p,new int[]{ Utilities.char2Int(destX),destY})) possibleMoveIndicators.get(String.valueOf(destX) + destY).setVisible(true);
-                }
+            ArrayList<int[]> moveIndicators = proxy.onPawnDrag(p);
+            if (moveIndicators == null) return;
+            for (int[] moveIndicator : moveIndicators) {
+                possibleMoveIndicators.get(String.valueOf(Utilities.int2Char(moveIndicator[0])) + moveIndicator[1]).setVisible(true);
             }
         });
 
@@ -292,64 +286,34 @@ public class ChessApplication extends Application {
         });
 
         piece.setOnMouseReleased(event -> {
+            if (chessEngine.chessBoard.getWhiteTurn() != p.getIsWhite() || chessEngine.getGameEnded()) return;
             for (ImageView indicator : possibleMoveIndicators.values()) {
                 indicator.setVisible(false);
             }
-            if (chessEngine.chessBoard.getWhiteTurn() != p.getIsWhite() || chessEngine.getGameEnded()) return;
             int[] position = coordinatesToPosition((int) (event.getSceneX() - mouseX), (int) (event.getSceneY() - mouseY));
-            char posX = Utilities.int2Char(position[0]);
-            int posY = position[1];
-            HashMap<Pioni,ArrayList<int[]>> legalMovesWhenKingThreatened = chessEngine.kingCheckMate(p.isWhite);
-            if (legalMovesWhenKingThreatened != null && !legalMovesWhenKingThreatened.isEmpty()){
-                ArrayList<int[]> desiredMoves = legalMovesWhenKingThreatened.get(p);
-                if (desiredMoves != null && desiredMoves.stream().noneMatch(arr->arr[0] == position[0] && arr[1] == posY)) {
-                    resetToOriginalPosition(p, piece);
-                } else legalMovesWhenKingThreatened.clear();
-            }
-            if (chessEngine.checkDumbMove(p,new int[]{position[0],position[1]})){
+            ArrayList<Pioni> res = proxy.requestMove(p,position);
+            if (res == null) {
                 resetToOriginalPosition(p, piece);
                 return;
             }
-            Pioni pioniAtDest = chessEngine.chessBoard.getPioniAt(posX, posY);
-            boolean res = chessEngine.nextMove(p.getXPos(), p.getYPos(), posX, posY);
-            if (!res) {
-                resetToOriginalPosition(p, piece);
-                return;
+            for (Pioni pioni : res) {
+                ImageView pieceImage = pieces.get(pioni);
+                if (pioni.getCaptured()) pieceImage.setVisible(false);
+                int[] newCoordinates = getCoordinates(pioni.getXPos(), pioni.getYPos());
+                pieceImage.setLayoutX(newCoordinates[0] - piece.getFitWidth() / 2);
+                pieceImage.setLayoutY(newCoordinates[1] - piece.getFitHeight() / 2);
             }
+            switchTurnAnimation(p.getIsWhite());
+            playPiecePlacementSound();
+            if (chessEngine.getGameEnded()) showWinScreen();
             toggleTimer();
-            int[] newCoordinates = getCoordinates(posX, posY);
-            if (p.type.equals("Vasilias") && pioniAtDest != null && pioniAtDest.type.equals("Pyrgos") && p.getIsWhite() == pioniAtDest.getIsWhite()){
-                newCoordinates = getCoordinates(p.getXPos(), p.getYPos());
-                ImageView destPioniImageView = pieces.get(pioniAtDest);
-                int[] destPioniCoordinates = getCoordinates(pioniAtDest.getXPos(), pioniAtDest.getYPos());
-                destPioniImageView.setLayoutX(destPioniCoordinates[0] - destPioniImageView.getFitWidth() / 2);
-                destPioniImageView.setLayoutY(destPioniCoordinates[1] - destPioniImageView.getFitHeight() / 2);
-            }
-            piece.setLayoutX(newCoordinates[0] - piece.getFitWidth() / 2);
-            piece.setLayoutY(newCoordinates[1] - piece.getFitHeight() / 2);
-            for (Pioni pioni : pieces.keySet()) {
-                if (pioni.getCaptured()) {
-                    pieces.get(pioni).setVisible(false);
-                }
-            }
-
-                updateCapturedPieces();
-               if (p.type.equals("Stratiotis") && ((p.getIsWhite() && p.getYPos() == 8) || (!p.getIsWhite() && p.getYPos() == 1))) {
-                selectUpgrade(p.getIsWhite()).thenAccept(selection ->{
-                    Pioni upgraded = chessEngine.upgradePioni(p,selection);
-                    if (upgraded != null) {
-                        root.getChildren().remove(pieces.get(p));
-                        addPiece(root, upgraded);
-                    }
-                    finishUp(p);
-                });
-            } else finishUp(p);
-
+            updateCapturedPieces();
         });
         switchTurnAnimation(p.getIsWhite());
         pieces.put(p, piece);
         root.getChildren().add(piece);
     }
+
     private void updateCapturedPieces() {
         ArrayList<Pioni> whites = chessEngine.chessBoard.getPionia().stream()
                 .filter(pioni -> pioni.getIsWhite() && pioni.getCaptured())
@@ -395,19 +359,6 @@ public class ChessApplication extends Application {
         }
     }
 
-    private void finishUp(Pioni p) {
-        switchTurnAnimation(p.getIsWhite());
-        playPiecePlacementSound();
-        if (ChessEngine.checkKingMat(chessEngine.chessBoard,!p.getIsWhite())){
-            setKingCheckEffect(!p.getIsWhite());
-            HashMap<Pioni, ArrayList<int[]>> legalMovesWhenEnemyKingThreatened = chessEngine.kingCheckMate(!p.getIsWhite());
-            if (legalMovesWhenEnemyKingThreatened == null || legalMovesWhenEnemyKingThreatened.isEmpty()) {
-                showWinScreen(p.getIsWhite());
-                chessEngine.setGameEnded(true);
-            }
-        } else if (chessEngine.stalemateCheck(!p.getIsWhite()) || chessEngine.chessBoard.getMovesRemaining() == 0) showWinScreen(null);
-        System.out.println(chessEngine.chessBoard.getMovesRemaining());
-    }
 
     private void resetToOriginalPosition(Pioni p, ImageView piece) {
         int[] orig = getCoordinates(p.getXPos(), p.getYPos());
@@ -422,20 +373,23 @@ public class ChessApplication extends Application {
         coordinates[1] = offBoundsEnd + Math.abs(y - 8) * tile + tile / 2;
         return coordinates;
     }
+
     private int[] coordinatesToPosition(int x, int y) {
         int[] position = new int[2];
-        position[0] = Math.abs(x-offBoundsEnd) / tile + 1;
-        position[1] = Math.abs(y - tile*8) / tile + 1;
+        position[0] = Math.abs(x - offBoundsEnd) / tile + 1;
+        position[1] = Math.abs(y - tile * 8) / tile + 1;
         return position;
     }
-    private void showWinScreen(Boolean winner) {
+
+    private void showWinScreen() {
         String winnerText;
         String textColor;
+        ChessEngine.Winner winner = chessEngine.getWinner();
 
-        if (winner == null) {
+        if (winner == ChessEngine.Winner.Draw) {
             winnerText = "It's a Tie!";
             textColor = "gold";
-        } else if (winner) {
+        } else if (winner == ChessEngine.Winner.White) {
             winnerText = "White Wins!";
             textColor = "white";
         } else {
@@ -452,7 +406,7 @@ public class ChessApplication extends Application {
         winnerLabel.setVisible(true);
 
         rightPanel.getChildren().clear();
-        rightPanel.getChildren().addAll(winnerLabel,playAgain);
+        rightPanel.getChildren().addAll(winnerLabel, playAgain);
 
         playAgain.setVisible(true);
         Platform.runLater(() -> {
@@ -462,8 +416,6 @@ public class ChessApplication extends Application {
             playAgain.setLayoutY(winnerLabel.getLayoutY() + winnerLabel.getHeight() + 30);
         });
     }
-
-
 
 
     private CompletableFuture<String> selectUpgrade(boolean white) {
@@ -536,6 +488,7 @@ public class ChessApplication extends Application {
         }
 
     }
+
     public void toggleTimer() {
         if (whiteTimerRunning) {
             blackTimerStartTime = System.nanoTime();
@@ -553,15 +506,17 @@ public class ChessApplication extends Application {
     public static void main(String[] args) {
         launch();
     }
-    private void setKingCheckEffect(boolean white){
+
+    private void setKingCheckEffect(boolean white) {
         DropShadow ds = new DropShadow();
         ds.setColor(Color.RED);
         ds.setRadius(2);
         ds.setSpread(1);
-        Pioni king = chessEngine.chessBoard.getPionia().stream().filter(p->p.getIsWhite() == white && p.type.equals("Vasilias")).findFirst().orElse(null);
+        Pioni king = chessEngine.chessBoard.getPionia().stream().filter(p -> p.getIsWhite() == white && p.type.equals("Vasilias")).findFirst().orElse(null);
         if (king == null) return;
         pieces.get(king).setEffect(ds);
     }
+
     private void playPiecePlacementSound() {
         try {
             InputStream inputStream = getClass().getResourceAsStream("/piece placement.wav");
@@ -588,5 +543,34 @@ public class ChessApplication extends Application {
         } catch (Exception e) {
             System.err.println(e.getMessage());
         }
+
     }
+    public void setMode(boolean offlineMode){
+        this.offlineMode = offlineMode;
+    }
+//    private void loadingScreen() {
+//        String videoPath = getClass().getResource("/startingScreen.mp4").toExternalForm();
+//
+//        // Create Media, MediaPlayer, and MediaView
+//        Media media = new Media(videoPath);
+//        MediaPlayer mediaPlayer = new MediaPlayer(media);
+//        MediaView mediaView = new MediaView(mediaPlayer);
+//
+//        // Set the video to fit the window
+//        mediaView.setPreserveRatio(false);
+//        mediaView.fitWidthProperty().bind(stage.widthProperty());
+//        mediaView.fitHeightProperty().bind(stage.heightProperty());
+//
+//        // Start the video playback in a loop
+//        mediaPlayer.setCycleCount(MediaPlayer.INDEFINITE);
+//        mediaPlayer.play();
+//
+//        // Add the MediaView to the scene
+//        Pane root = new Pane(mediaView);
+//        Scene scene = new Scene(root, 1000, 800);
+//
+//        stage.setTitle("JavaFX Video Background");
+//        stage.setScene(scene);
+//        stage.show();
+//    }
 }

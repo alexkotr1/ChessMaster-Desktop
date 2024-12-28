@@ -1,8 +1,9 @@
 package com.alexk.chess;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
-public class Stratigos extends Pioni {
+public class Stratigos extends Pioni implements Serializable {
 
 
     public Stratigos(Boolean isWhite, ChessBoard chessBoard, char initialX, int initialY) {

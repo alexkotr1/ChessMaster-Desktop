@@ -1,8 +1,9 @@
 package com.alexk.chess;
 
+import java.io.Serializable;
 import java.util.Arrays;
 
-public class Alogo extends Pioni {
+public class Alogo extends Pioni implements Serializable {
 
 
     public Alogo(Boolean isWhite, ChessBoard chessBoard, char initialX, int initialY) {

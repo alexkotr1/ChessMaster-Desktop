@@ -1,8 +1,9 @@
 package com.alexk.chess;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
-public class Vasilissa extends Pioni {
+public class Vasilissa extends Pioni implements Serializable {
     public Vasilissa(Boolean isWhite, ChessBoard chessBoard, char initialX, int initialY) {
         super(isWhite, chessBoard, initialX, initialY);
     }

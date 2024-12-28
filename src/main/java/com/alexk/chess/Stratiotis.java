@@ -1,8 +1,9 @@
 package com.alexk.chess;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
-public class Stratiotis extends Pioni {
+public class Stratiotis extends Pioni implements Serializable {
 
 
     public Stratiotis(Boolean isWhite, ChessBoard chessBoard, char initialX, int initialY) {
