@@ -22,6 +22,7 @@ public class Main extends Application implements WebSocketMessageListener{
     private Stage dialogStage = new Stage();
     private Stage primaryStage = new Stage();
     private static Label messageLabel;
+    private static WebSocket webSocket;
     @Override
     public void start(Stage primaryStage)  {
         VBox root = getDialogStage();
@@ -33,7 +34,7 @@ public class Main extends Application implements WebSocketMessageListener{
     }
 
     public VBox getDialogStage() {
-
+        webSocket = new WebSocket(this);
         dialogStage.initModality(Modality.NONE);
         dialogStage.setTitle("Game Options");
 
@@ -77,6 +78,16 @@ public class Main extends Application implements WebSocketMessageListener{
         confirmButton.setOnAction(e -> {
             if (!isHost && !isOfflineMode && codeField.isVisible()) {
                 gameCode = codeField.getText();
+                Message message = new Message();
+                message.setCode(Message.RequestCodes.JOIN_GAME);
+                message.setData(gameCode);
+                try {
+                    message.send(new WebSocket(this));
+                } catch (JsonProcessingException ex) {
+                    throw new RuntimeException(ex);
+                }
+                GameSession.setState(GameSession.GameState.WAITING_FOR_PLAYER_JOIN);
+                return;
             }
             if (isOfflineMode) {
                 ChessApplication chessApp = new ChessApplication();
@@ -123,6 +134,8 @@ public class Main extends Application implements WebSocketMessageListener{
             if (message.getCode() == Message.RequestCodes.HOST_GAME_RESULT) {
                 GameSession.setState(GameSession.GameState.WAITING_FOR_PLAYER_JOIN);
                 messageLabel.setText("Code: " + message.getData());
+            } else if (message.getCode() == Message.RequestCodes.JOIN_GAME_RESULT) {
+
             }
         });
     }

@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Message {
     public static ObjectMapper mapper = new ObjectMapper();
-    public enum RequestCodes { HOST_GAME, JOIN_GAME, HOST_GAME_RESULT, JOIN_GAME_RESULT }
+    public enum RequestCodes { HOST_GAME, JOIN_GAME, HOST_GAME_RESULT, JOIN_GAME_SUCCESS, JOIN_GAME_FAILURE }
     private RequestCodes code;
     private String data;
 
