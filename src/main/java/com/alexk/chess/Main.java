@@ -1,6 +1,7 @@
 package com.alexk.chess;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import jakarta.websocket.OnMessage;
 import jakarta.websocket.Session;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -13,16 +14,17 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
-import java.util.Scanner;
+import java.util.Objects;
+
 
 public class Main extends Application implements WebSocketMessageListener{
     private static boolean isHost;
     private static String gameCode;
     private static boolean isOfflineMode;
-    private Stage dialogStage = new Stage();
+    private final Stage dialogStage = new Stage();
     private Stage primaryStage = new Stage();
     private static Label messageLabel;
-    private static WebSocket webSocket;
+    public static WebSocket webSocket;
     @Override
     public void start(Stage primaryStage)  {
         VBox root = getDialogStage();
@@ -79,30 +81,36 @@ public class Main extends Application implements WebSocketMessageListener{
             if (!isHost && !isOfflineMode && codeField.isVisible()) {
                 gameCode = codeField.getText();
                 Message message = new Message();
-                message.setCode(Message.RequestCodes.JOIN_GAME);
+                message.setCode(RequestCodes.JOIN_GAME);
                 message.setData(gameCode);
-                try {
-                    message.send(new WebSocket(this));
-                } catch (JsonProcessingException ex) {
-                    throw new RuntimeException(ex);
-                }
+                message.send(webSocket);
                 GameSession.setState(GameSession.GameState.WAITING_FOR_PLAYER_JOIN);
+                message.onReply(res->{
+                    if (res.getCode() == RequestCodes.JOIN_GAME_FAILURE) Platform.runLater(() -> messageLabel.setText("Code: " + res.getData()));
+                    ChessApplication chessApp = new ChessApplication();
+                    chessApp.setMode(false);
+                    chessApp.setWebSocket(webSocket);
+                    chessApp.start(primaryStage);
+                    dialogStage.close();
+                });
                 return;
             }
             if (isOfflineMode) {
                 ChessApplication chessApp = new ChessApplication();
                 chessApp.setMode(true);
                 chessApp.start(primaryStage);
+                dialogStage.close();
             } else if (isHost) {
-                WebSocket webSocket = new WebSocket(this);
                 Message message = new Message();
-                message.setCode(Message.RequestCodes.HOST_GAME);
-                try {
-                    message.send(webSocket);
-                } catch (JsonProcessingException ex) {
-                    throw new RuntimeException(ex);
-                }
+                message.setCode(RequestCodes.HOST_GAME);
+                message.send(webSocket);
                 GameSession.setState(GameSession.GameState.WAITING_FOR_HOST_CODE);
+                System.out.println("Waiting for response on message with ID:" + message.getMessageID());
+                message.onReply(res->{
+                    GameSession.setState(GameSession.GameState.WAITING_FOR_PLAYER_JOIN);
+                    Platform.runLater(() -> messageLabel.setText("Code: " + res.getData()));
+
+                });
             }
         });
 
@@ -110,9 +118,7 @@ public class Main extends Application implements WebSocketMessageListener{
         return root;
     }
     public void startOnPlayerJoin(){
-        ChessApplication chessApp = new ChessApplication();
-        chessApp.setMode(false);
-        chessApp.start(primaryStage);
+
     }
     public static boolean isHost() {
         return isHost;
@@ -128,16 +134,15 @@ public class Main extends Application implements WebSocketMessageListener{
 
     @Override
     public void onMessageReceived(Message message) {
-        System.out.println("Message received in Main: " + message.getCode() + ", Data: " + message.getData());
-
         Platform.runLater(() -> {
-            if (message.getCode() == Message.RequestCodes.HOST_GAME_RESULT) {
-                GameSession.setState(GameSession.GameState.WAITING_FOR_PLAYER_JOIN);
-                messageLabel.setText("Code: " + message.getData());
-            } else if (message.getCode() == Message.RequestCodes.JOIN_GAME_RESULT) {
-
+            System.out.println("Received message with ID:" + message.getMessageID());
+            if (message.getCode() == RequestCodes.SECOND_PLAYER_JOINED) {
+                ChessApplication chessApp = new ChessApplication();
+                chessApp.setMode(false);
+                chessApp.setWebSocket(webSocket);
+                chessApp.start(primaryStage);
+                dialogStage.close();
             }
         });
     }
-
 }

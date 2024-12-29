@@ -1,16 +1,19 @@
-package com.alexk.chess;
+package com.alexk.chess.ChessEngine;
 
-import java.io.Serializable;
+import com.alexk.chess.ChessBoard.ChessBoard;
+import com.alexk.chess.ChessBoard.LocalChessBoard;
+import com.alexk.chess.Pionia.*;
+import com.alexk.chess.Utilities;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.stream.Collectors;
-public class ChessEngine implements Serializable {
-    public enum Winner { White, Black, Draw };
-    protected final ChessBoard chessBoard = new ChessBoard();
+public class LocalChessEngine extends ChessEngine {
+    protected final LocalChessBoard chessBoard = new LocalChessBoard();
     private Boolean gameEnded = false;
-    private Winner winner = null;
+    private ChessEngine.Winner winner = null;
     ArrayList<int[]> allPositions = new ArrayList<>();
-    public ChessEngine() {
+    public LocalChessEngine() {
         for (int x = 1;x<=8;x++) {
             for (int y = 1; y <= 8; y++) {
                 allPositions.add(new int[]{x, y});
@@ -20,6 +23,7 @@ public class ChessEngine implements Serializable {
     public void playChess(){
         chessBoard.loadBoard();
         chessBoard.printBoard();
+        System.out.println(chessBoard.getPionia().size());
     }
     public ArrayList<Pioni> nextMove(char xOrig, int yOrig, char xDest, int yDest){
         Pioni p = chessBoard.getPioniAt(xOrig,yOrig);
@@ -27,7 +31,7 @@ public class ChessEngine implements Serializable {
         ArrayList<Pioni> moved = new ArrayList<>();
         moved.add(p);
         Pioni pioniAtDest = chessBoard.getPioniAt(xDest,yDest);
-        HashMap<Pioni, ArrayList<int[]>> legalMovesWhenKingThreatened = kingCheckMate(p.isWhite);
+        HashMap<Pioni, ArrayList<int[]>> legalMovesWhenKingThreatened = kingCheckMate(p.getIsWhite());
         if (legalMovesWhenKingThreatened != null && !legalMovesWhenKingThreatened.isEmpty()) {
             ArrayList<int[]> desiredMoves = legalMovesWhenKingThreatened.get(p);
             if (desiredMoves != null && desiredMoves.stream().noneMatch(arr -> arr[0] == Utilities.char2Int(xDest) && arr[1] == yDest)) {
@@ -35,7 +39,7 @@ public class ChessEngine implements Serializable {
             } else legalMovesWhenKingThreatened.clear();
         }
         if (checkDumbMove(p, new int[]{Utilities.char2Int(xDest), yDest})) return null;
-        if (p.type.equals("Vasilias") && pioniAtDest != null && pioniAtDest.type.equals("Pyrgos") && p.getIsWhite() == pioniAtDest.getIsWhite()){
+        if (p.getType().equals("Vasilias") && pioniAtDest != null && pioniAtDest.getType().equals("Pyrgos") && p.getIsWhite() == pioniAtDest.getIsWhite()){
             moved.add(pioniAtDest);
             int[] dest = pioniAtDest.getPosition();
             int[] orig = p.getPosition();
@@ -49,7 +53,7 @@ public class ChessEngine implements Serializable {
             chessBoard.setMovesRemaining(100);
             moved.add(pioniAtDest);
         }
-        if (ChessEngine.checkKingMat(chessBoard, !p.getIsWhite())) {
+        if (checkKingMat(chessBoard, !p.getIsWhite())) {
             HashMap<Pioni, ArrayList<int[]>> legalMovesWhenEnemyKingThreatened = kingCheckMate(!p.getIsWhite());
             if (legalMovesWhenEnemyKingThreatened == null || legalMovesWhenEnemyKingThreatened.isEmpty()) setGameEnded(true,p.getIsWhite() ? Winner.White : Winner.Black);
         } else if (stalemateCheck(!p.getIsWhite()) || chessBoard.getMovesRemaining() == 0) setGameEnded(true, Winner.Draw);
@@ -57,20 +61,20 @@ public class ChessEngine implements Serializable {
         return moved;
     }
     public Pioni upgradePioni(Pioni p,String type){
-        if (p.type.equals("Stratiotis") && ((p.getIsWhite() && p.getYPos() == 8) || (!p.getIsWhite() && p.getYPos() == 1))) {
+        if (p.getType().equals("Stratiotis") && ((p.getIsWhite() && p.getYPos() == 8) || (!p.getIsWhite() && p.getYPos() == 1))) {
             Pioni upgradedPioni;
             switch (type) {
                 case "Alogo":
-                    upgradedPioni = new Alogo(p.isWhite, chessBoard, p.getXPos(), p.getYPos());
+                    upgradedPioni = new Alogo(p.getIsWhite(), chessBoard, p.getXPos(), p.getYPos());
                     break;
                 case "Pyrgos":
-                    upgradedPioni = new Pyrgos(p.isWhite, chessBoard, p.getXPos(), p.getYPos());
+                    upgradedPioni = new Pyrgos(p.getIsWhite(), chessBoard, p.getXPos(), p.getYPos());
                     break;
                 case "Stratigos":
-                    upgradedPioni = new Stratigos(p.isWhite, chessBoard, p.getXPos(), p.getYPos());
+                    upgradedPioni = new Stratigos(p.getIsWhite(), chessBoard, p.getXPos(), p.getYPos());
                     break;
                 case "Vasilissa":
-                    upgradedPioni = new Vasilissa(p.isWhite, chessBoard, p.getXPos(), p.getYPos());
+                    upgradedPioni = new Vasilissa(p.getIsWhite(), chessBoard, p.getXPos(), p.getYPos());
                     break;
                 default:
                     System.err.println("Something went wrong!");
@@ -86,7 +90,7 @@ public class ChessEngine implements Serializable {
     public static boolean checkKingMat(ChessBoard chessBoard, boolean white){
         Pioni allyKing = chessBoard.getPionia()
                 .stream()
-                .filter(p -> p.getIsWhite() == white && p.type.equals("Vasilias"))
+                .filter(p -> p.getIsWhite() == white && p.getType().equals("Vasilias"))
                 .findFirst()
                 .orElse(null);
         assert allyKing != null;
@@ -104,7 +108,7 @@ public class ChessEngine implements Serializable {
                 Pioni duplicatePioni = testChessBoard.getPioniAt(p.getXPos(), p.getYPos());
                 if (!duplicatePioni.isLegalMove(Utilities.int2Char(pos[0]), pos[1])) continue;
                 testChessBoard.move(p.getXPos(), p.getYPos(), Utilities.int2Char(pos[0]), pos[1]);
-                if (!ChessEngine.checkKingMat(testChessBoard, white)) {
+                if (!checkKingMat(testChessBoard, white)) {
                     Pioni origPioni = chessBoard.getPioniAt(p.getXPos(), p.getYPos());
                     ArrayList<int[]> existingRoutes = legalMovesWhenKingThreatened.get(origPioni);
                     if (existingRoutes == null) existingRoutes = new ArrayList<>();
@@ -130,12 +134,13 @@ public class ChessEngine implements Serializable {
     public boolean checkDumbMove(Pioni p, int[] dest){
         ChessBoard testChessBoard = chessBoard.clone();
         testChessBoard.move(p.getXPos(), p.getYPos(), Utilities.int2Char(dest[0]), dest[1]);
-        return ChessEngine.checkKingMat(testChessBoard,p.isWhite);
+        return checkKingMat(testChessBoard,p.getIsWhite());
     }
-    public void setGameEnded(Boolean gameEnded, Winner winner) {
+    public void setGameEnded(Boolean gameEnded, ChessEngine.Winner winner) {
         this.gameEnded = gameEnded;
         this.winner = winner;
     }
-    public Boolean getGameEnded() { return gameEnded;}
-    public Winner getWinner() { return winner;}
+    public Boolean getGameEnded() { return gameEnded; }
+    public ChessBoard getBoard(){ return chessBoard; }
+    public Winner getWinner() { return winner; }
 }

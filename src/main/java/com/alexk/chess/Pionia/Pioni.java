@@ -1,16 +1,33 @@
-package com.alexk.chess;
+package com.alexk.chess.Pionia;
+
+import com.alexk.chess.ChessBoard.ChessBoard;
+import com.alexk.chess.Utilities;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.UUID;
-
+@JsonTypeInfo(
+        use = JsonTypeInfo.Id.NAME,
+        include = JsonTypeInfo.As.PROPERTY,
+        property = "type"
+)
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = Stratiotis.class, name = "Stratiotis"),
+        @JsonSubTypes.Type(value = Pyrgos.class, name = "Pyrgos"),
+        @JsonSubTypes.Type(value = Alogo.class, name = "Alogo"),
+        @JsonSubTypes.Type(value = Stratigos.class, name = "Stratigos"),
+        @JsonSubTypes.Type(value = Vasilissa.class, name = "Vasilissa"),
+        @JsonSubTypes.Type(value = Vasilias.class, name = "Vasilias")
+})
 public abstract class Pioni implements Serializable {
-    protected boolean isWhite;
-    protected String type;
-    protected int[] position = new int[2];
-    protected ChessBoard chessBoard;
-    private final String id;
+    private boolean isWhite;
+    private String type;
+    private int[] position = new int[2];
+    private ChessBoard chessBoard;
+    private String id;
     private String imagePath;
     private boolean captured;
     public Pioni(Boolean isWhite, ChessBoard chessBoard, char initialX, int initialY) {
@@ -103,11 +120,15 @@ public abstract class Pioni implements Serializable {
         position[0] = Utilities.char2Int(x);
         position[1] = y;
     }
+    public void setIsWhite(boolean isWhite){
+        this.isWhite = isWhite;
+    }
+    public boolean getIsWhite(){
+        return isWhite;
+    }
+
     public int[] getPosition(){
         return position;
-    }
-    public void setXPos(int x){
-        position[0] = x;
     }
     public void setXPos(char x){
         position[0] = Utilities.char2Int(x);
@@ -121,25 +142,26 @@ public abstract class Pioni implements Serializable {
     public int getYPos(){
         return position[1];
     }
-    public void setIsWhite(boolean isWhite){
-        this.isWhite = isWhite;
-    }
-    public boolean getIsWhite(){
-        return isWhite;
-    }
+
     public void setChessBoard(ChessBoard chessBoard){ this.chessBoard = chessBoard; }
     public ChessBoard getChessBoard(){ return chessBoard; }
+
     public void setType(String type){
         this.type = type;
     }
     public String getType(){
         return type;
     }
+
     public void setImagePath(String imagePath){ this.imagePath = imagePath; }
     public String getImagePath(){ return imagePath; }
+
     public void setCaptured(Boolean captured){ this.captured = captured; }
     public Boolean getCaptured(){ return captured; }
+
     public String getID(){ return id; }
+    public void setId(String ID) { this.id = id;}
+
     public static void printRoute(ArrayList<int[]> route){
         if (route == null || route.isEmpty()) {
             System.out.println("Null or empty route");
@@ -154,7 +176,7 @@ public abstract class Pioni implements Serializable {
         return String.format("Type: %s Position: [%c,%d]", type, Utilities.int2Char(position[0]), position[1]);
     }
     @Override
-    protected Pioni clone() {
+    public Pioni clone() {
         try {
             Pioni cloned = this.getClass()
                     .getConstructor(Boolean.class, ChessBoard.class, char.class, int.class)

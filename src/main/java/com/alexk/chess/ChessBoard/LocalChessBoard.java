@@ -1,9 +1,11 @@
-package com.alexk.chess;
+package com.alexk.chess.ChessBoard;
 
-import java.io.Serializable;
+import com.alexk.chess.Pionia.*;
+import com.alexk.chess.Utilities;
+
 import java.util.ArrayList;
 
-public class ChessBoard implements Serializable {
+public class LocalChessBoard extends ChessBoard {
     private final ArrayList<Pioni> Pionia = new ArrayList<>();
     private boolean whiteTurn = true;
     private int movesRemaining = 100;
@@ -20,32 +22,32 @@ public class ChessBoard implements Serializable {
     }
     public void loadBoard(){
         for (int x = 1;x<=16;x++){
-            Pionia.add(new Stratiotis(x < 9,this,Utilities.int2Char(x < 9 ? x : x - 8 ),x < 9 ? 2 : 7));
+            Pionia.add(new Stratiotis(x < 9,this, Utilities.int2Char(x < 9 ? x : x - 8 ),x < 9 ? 2 : 7));
         }
         for (int x = 0;x<2;x++){
             for (int y = 0;y<4;y++){
-             switch (y){
-                 case 0:{
-                     Pionia.add(new Pyrgos(x == 0,this,'A',x == 0 ? 1 : 8));
-                     Pionia.add(new Pyrgos(x == 0,this,'H',x == 0 ? 1 : 8));
-                     break;
-                 }
-                 case 1:{
-                     Pionia.add(new Alogo(x == 0,this,'B',x == 0 ? 1 : 8));
-                     Pionia.add(new Alogo(x == 0,this,'G',x == 0 ? 1 : 8));
-                     break;
-                 }
-                 case 2:{
-                     Pionia.add(new Stratigos(x == 0,this,'C',x == 0 ? 1 : 8));
-                     Pionia.add(new Stratigos(x == 0,this,'F',x == 0 ? 1 : 8));
-                     break;
-                 }
-                 case 3:{
-                     Pionia.add(new Vasilissa(x == 0,this,'D',x == 0 ? 1 : 8));
-                     Pionia.add(new Vasilias(x == 0,this,'E',x == 0 ? 1 : 8));
-                     break;
-                 }
-             }
+                switch (y){
+                    case 0:{
+                        Pionia.add(new Pyrgos(x == 0,this,'A',x == 0 ? 1 : 8));
+                        Pionia.add(new Pyrgos(x == 0,this,'H',x == 0 ? 1 : 8));
+                        break;
+                    }
+                    case 1:{
+                        Pionia.add(new Alogo(x == 0,this,'B',x == 0 ? 1 : 8));
+                        Pionia.add(new Alogo(x == 0,this,'G',x == 0 ? 1 : 8));
+                        break;
+                    }
+                    case 2:{
+                        Pionia.add(new Stratigos(x == 0,this,'C',x == 0 ? 1 : 8));
+                        Pionia.add(new Stratigos(x == 0,this,'F',x == 0 ? 1 : 8));
+                        break;
+                    }
+                    case 3:{
+                        Pionia.add(new Vasilissa(x == 0,this,'D',x == 0 ? 1 : 8));
+                        Pionia.add(new Vasilias(x == 0,this,'E',x == 0 ? 1 : 8));
+                        break;
+                    }
+                }
             }
         }
     }
@@ -59,10 +61,10 @@ public class ChessBoard implements Serializable {
     public void move(char xOrig, int yOrig, char xDest,int yDest){
         movesRemaining--;
         Pioni p = getPioniAt(xOrig,yOrig);
-        if (p.type.equals("Stratiotis")) movesRemaining = 100;
+        if (p.getType().equals("Stratiotis")) movesRemaining = 100;
         placePioniAt(p,xDest,yDest);
-        if (p.type.equals("Pyrgos")) ((Pyrgos) p).setMoved(true);
-        else if (p.type.equals("Vasilias")) ((Vasilias) p).setMoved(true);
+        if (p.getType().equals("Pyrgos")) ((Pyrgos) p).setMoved(true);
+        else if (p.getType().equals("Vasilias")) ((Vasilias) p).setMoved(true);
     }
     public Boolean getWhiteTurn(){
         return whiteTurn;
@@ -88,13 +90,13 @@ public class ChessBoard implements Serializable {
 
     }
     @Override
-    protected ChessBoard clone() {
-        ChessBoard chessBoard = new ChessBoard();
-        chessBoard.whiteTurn = whiteTurn;
+    public ChessBoard clone() {
+        ChessBoard chessBoard = new LocalChessBoard();
+        chessBoard.setWhiteTurn(whiteTurn);
         for (Pioni p : Pionia){
             Pioni clone = p.clone();
             clone.setChessBoard(chessBoard);
-            chessBoard.Pionia.add(clone);
+            chessBoard.getPionia().add(clone);
         }
         return chessBoard;
     }

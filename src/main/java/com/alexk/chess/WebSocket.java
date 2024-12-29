@@ -10,9 +10,8 @@ import java.net.URI;
 public class WebSocket {
 
     private Session session;
-    private WebSocketMessageListener listener;
+    private final WebSocketMessageListener listener;
 
-    // Constructor with optional listener
     public WebSocket(WebSocketMessageListener listener) {
         this.listener = listener;
         try {
@@ -31,13 +30,15 @@ public class WebSocket {
     @OnMessage
     public void onMessage(String message) throws JsonProcessingException {
         System.out.println("Received raw message: " + message);
-
-        // Deserialize the message
         Message res = Message.mapper.readValue(message, Message.class);
-
-        // Notify the listener, if available
         if (listener != null) {
             listener.onMessageReceived(res);
+        }
+        if (Message.pending.containsKey(res.getMessageID())) {
+            System.out.println("Found response");
+            Message reply = Message.pending.get(res.getMessageID());
+            reply.triggerReplyCallback(res);
+            Message.pending.remove(reply.getMessageID());
         }
     }
 

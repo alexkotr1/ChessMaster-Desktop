@@ -1,19 +1,23 @@
 package com.alexk.chess;
 
 
+import com.alexk.chess.ChessEngine.ChessEngine;
+import com.alexk.chess.ChessEngine.LocalChessEngine;
+import com.alexk.chess.ChessEngine.OnlineChessEngine;
+import com.alexk.chess.Pionia.Pioni;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class Proxy {
+public class Proxy{
     ChessEngine chessEngine;
     private final boolean offlineMode;
     private final ArrayList<int[]> allPositions = new ArrayList<>();
-    public Proxy(boolean offlineMode){
+    public Proxy(boolean offlineMode, WebSocket socket){
         this.offlineMode = offlineMode;
-        if (offlineMode) {
-            chessEngine = new ChessEngine();
-            chessEngine.playChess();
-        }
+        if (offlineMode) chessEngine = new LocalChessEngine();
+        else chessEngine = new OnlineChessEngine(socket);
+        chessEngine.playChess();
         for (int x = 1; x <= 8; x++) {
             for (int y = 1; y <= 8; y++) {
                 allPositions.add(new int[]{x, y});
@@ -27,8 +31,8 @@ public class Proxy {
 
     public ArrayList<int[]> onPawnDrag(Pioni p){
         ArrayList<int[]> possibleMoveIndicators = new ArrayList<>();
-        if (chessEngine.chessBoard.getWhiteTurn() != p.getIsWhite() || chessEngine.getGameEnded()) return null;
-        HashMap<Pioni, ArrayList<int[]>> legalMovesWhenKingThreatened = chessEngine.kingCheckMate(p.isWhite);
+        if (chessEngine.getBoard().getWhiteTurn() != p.getIsWhite() || chessEngine.getGameEnded()) return null;
+        HashMap<Pioni, ArrayList<int[]>> legalMovesWhenKingThreatened = chessEngine.kingCheckMate(p.getIsWhite());
         if (legalMovesWhenKingThreatened != null && !legalMovesWhenKingThreatened.isEmpty()) {
             if (legalMovesWhenKingThreatened.get(p) == null) return null;
             for (int[] dest : legalMovesWhenKingThreatened.get(p)) {
@@ -45,8 +49,11 @@ public class Proxy {
         }
         return possibleMoveIndicators;
     }
-    public ArrayList<Pioni> requestMove(Pioni p, int[] position){
+    public ArrayList<Pioni> requestMove(Pioni p, int[] position) {
         if (offlineMode) return chessEngine.nextMove(p.getXPos(), p.getYPos(), Utilities.int2Char(position[0]), position[1]);
+        chessEngine.nextMove(p.getXPos(), p.getYPos(), Utilities.int2Char(position[0]), position[1]);
+
         return null;
     }
+
 }

@@ -1,4 +1,7 @@
-package com.alexk.chess;
+package com.alexk.chess.Pionia;
+
+import com.alexk.chess.ChessBoard.ChessBoard;
+import com.alexk.chess.Utilities;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -15,6 +18,6 @@ public class Vasilissa extends Pioni implements Serializable {
         int currentX = Utilities.char2Int(getXPos());
         int currentY = getYPos();
         ArrayList<int[]> route = getRoute(currentX,currentY,destX,y);
-        return (route != null && !route.isEmpty() && route.getLast()[0] == destX && route.getLast()[1] == y) && (this.chessBoard.getPioniAt(x,y) == null || this.chessBoard.getPioniAt(x,y).getIsWhite() != getIsWhite());
+        return (route != null && !route.isEmpty() && route.getLast()[0] == destX && route.getLast()[1] == y) && (this.getChessBoard().getPioniAt(x,y) == null || this.getChessBoard().getPioniAt(x,y).getIsWhite() != getIsWhite());
     }
 }

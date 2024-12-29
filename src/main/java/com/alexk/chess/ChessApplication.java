@@ -1,5 +1,7 @@
 package com.alexk.chess;
 
+import com.alexk.chess.ChessEngine.ChessEngine;
+import com.alexk.chess.Pionia.Pioni;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -57,6 +59,7 @@ public class ChessApplication extends Application {
     private Proxy proxy;
     private ChessEngine chessEngine;
     private boolean offlineMode;
+    private WebSocket webSocket;
 
     public ChessApplication() {
     }
@@ -71,7 +74,7 @@ public class ChessApplication extends Application {
     private void initialize() {
         root = new AnchorPane();
         rightPanel = new AnchorPane();
-        proxy = new Proxy(offlineMode);
+        proxy = new Proxy(offlineMode, webSocket);
         chessEngine = proxy.chessEngine;
 
         ImageView background = new ImageView(new Image("chessBoard.jpeg"));
@@ -222,7 +225,7 @@ public class ChessApplication extends Application {
 
         root.getChildren().addAll(background, rightPanel);
 
-        ArrayList<Pioni> Pionia = chessEngine.chessBoard.getPionia();
+        ArrayList<Pioni> Pionia = chessEngine.getBoard().getPionia();
         for (Pioni p : Pionia) {
             addPiece(root, p);
         }
@@ -264,7 +267,6 @@ public class ChessApplication extends Application {
         piece.setLayoutX(coordinates[0] - piece.getFitWidth() / 2);
         piece.setLayoutY(coordinates[1] - piece.getFitHeight() / 2);
         piece.setPreserveRatio(false);
-
         piece.setOnMousePressed(event -> {
             mouseX = event.getSceneX() - piece.getLayoutX();
             mouseY = event.getSceneY() - piece.getLayoutY();
@@ -279,14 +281,14 @@ public class ChessApplication extends Application {
         });
 
         piece.setOnMouseDragged(event -> {
-            if (chessEngine.chessBoard.getWhiteTurn() != p.getIsWhite() || chessEngine.getGameEnded()) return;
+            if (chessEngine.getBoard().getWhiteTurn() != p.getIsWhite() || chessEngine.getGameEnded()) return;
             piece.setEffect(null);
             piece.setLayoutX(event.getSceneX() - mouseX);
             piece.setLayoutY(event.getSceneY() - mouseY);
         });
 
         piece.setOnMouseReleased(event -> {
-            if (chessEngine.chessBoard.getWhiteTurn() != p.getIsWhite() || chessEngine.getGameEnded()) return;
+            if (chessEngine.getBoard().getWhiteTurn() != p.getIsWhite() || chessEngine.getGameEnded()) return;
             for (ImageView indicator : possibleMoveIndicators.values()) {
                 indicator.setVisible(false);
             }
@@ -315,11 +317,11 @@ public class ChessApplication extends Application {
     }
 
     private void updateCapturedPieces() {
-        ArrayList<Pioni> whites = chessEngine.chessBoard.getPionia().stream()
+        ArrayList<Pioni> whites = chessEngine.getBoard().getPionia().stream()
                 .filter(pioni -> pioni.getIsWhite() && pioni.getCaptured())
                 .collect(Collectors.toCollection(ArrayList::new));
 
-        ArrayList<Pioni> blacks = chessEngine.chessBoard.getPionia().stream()
+        ArrayList<Pioni> blacks = chessEngine.getBoard().getPionia().stream()
                 .filter(pioni -> !pioni.getIsWhite() && pioni.getCaptured())
                 .collect(Collectors.toCollection(ArrayList::new));
 
@@ -360,11 +362,12 @@ public class ChessApplication extends Application {
     }
 
 
+
     private void resetToOriginalPosition(Pioni p, ImageView piece) {
         int[] orig = getCoordinates(p.getXPos(), p.getYPos());
         piece.setLayoutX(orig[0] - piece.getFitWidth() / 2);
         piece.setLayoutY(orig[1] - piece.getFitHeight() / 2);
-        piece.setEffect(p.isWhite ? whiteTurnEffect : blackTurnEffect);
+        piece.setEffect(p.getIsWhite() ? whiteTurnEffect : blackTurnEffect);
     }
 
     private int[] getCoordinates(char x, int y) {
@@ -439,12 +442,12 @@ public class ChessApplication extends Application {
                 "-fx-border-radius: 10; " +
                 "-fx-background-radius: 10;");
         HashMap<String, String> imagePaths = new HashMap<>();
-        chessEngine.chessBoard.getPionia()
+        chessEngine.getBoard().getPionia()
                 .stream()
                 .filter(pioni -> pioni.getIsWhite() == white)
                 .forEach(pioni -> {
-                    if (pioni.type.equals("Alogo") || pioni.type.equals("Pyrgos") || pioni.type.equals("Stratigos") || pioni.type.equals("Vasilissa")) {
-                        imagePaths.put(pioni.type, pioni.getImagePath());
+                    if (pioni.getType().equals("Alogo") || pioni.getType().equals("Pyrgos") || pioni.getType().equals("Stratigos") || pioni.getType().equals("Vasilissa")) {
+                        imagePaths.put(pioni.getType(), pioni.getImagePath());
                     }
                 });
 
@@ -477,13 +480,13 @@ public class ChessApplication extends Application {
     private void switchTurnAnimation(boolean isWhite) {
         if (isWhite) {
             for (Pioni p : pieces.keySet()) {
-                if (!p.isWhite) pieces.get(p).setEffect(blackTurnEffect);
+                if (!p.getIsWhite()) pieces.get(p).setEffect(blackTurnEffect);
                 else pieces.get(p).setEffect(null);
             }
             return;
         }
         for (Pioni p : pieces.keySet()) {
-            if (p.isWhite) pieces.get(p).setEffect(whiteTurnEffect);
+            if (p.getIsWhite()) pieces.get(p).setEffect(whiteTurnEffect);
             else pieces.get(p).setEffect(null);
         }
 
@@ -512,7 +515,7 @@ public class ChessApplication extends Application {
         ds.setColor(Color.RED);
         ds.setRadius(2);
         ds.setSpread(1);
-        Pioni king = chessEngine.chessBoard.getPionia().stream().filter(p -> p.getIsWhite() == white && p.type.equals("Vasilias")).findFirst().orElse(null);
+        Pioni king = chessEngine.getBoard().getPionia().stream().filter(p -> p.getIsWhite() == white && p.getType().equals("Vasilias")).findFirst().orElse(null);
         if (king == null) return;
         pieces.get(king).setEffect(ds);
     }
@@ -548,6 +551,8 @@ public class ChessApplication extends Application {
     public void setMode(boolean offlineMode){
         this.offlineMode = offlineMode;
     }
+    public void setWebSocket(WebSocket socket){ this.webSocket = socket; }
+
 //    private void loadingScreen() {
 //        String videoPath = getClass().getResource("/startingScreen.mp4").toExternalForm();
 //
