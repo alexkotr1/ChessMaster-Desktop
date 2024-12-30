@@ -13,12 +13,13 @@ public class OnlineChessBoard extends ChessBoard {
     private Boolean gameEnded = false;
     private ChessEngine.Winner winner = null;
     private String state;
-    public OnlineChessBoard(ArrayList<Pioni> pionia, boolean whiteTurn, int movesRemaining, boolean gameEnded, String state){
+    public OnlineChessBoard(ArrayList<Pioni> pionia, boolean whiteTurn, int movesRemaining, boolean gameEnded, String state, ChessEngine.Winner winner){
         this.pionia.addAll(pionia);
         this.whiteTurn = whiteTurn;
         this.movesRemaining = movesRemaining;
         this.gameEnded = gameEnded;
         this.state = state;
+        this.winner = winner;
     }
     public OnlineChessBoard(){
         this.loadBoard();
@@ -59,6 +60,7 @@ public class OnlineChessBoard extends ChessBoard {
     public void move(char xOrig, int yOrig, char xDest,int yDest){}
     public int getMovesRemaining(){ return movesRemaining; }
     public ChessEngine.Winner getWinner() { return winner; }
+    public void setWinner(ChessEngine.Winner winner) { this.winner = winner; }
     public void printBoard(){
         System.out.println("   a  b  c  d  e  f  g  h  \n  ------------------------");
         for (int y = 8;y>=1;y--){

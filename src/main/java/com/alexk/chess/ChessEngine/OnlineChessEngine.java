@@ -68,6 +68,7 @@ public class OnlineChessEngine extends ChessEngine {
                 this.chessBoard.setWhiteTurn(board.getWhiteTurn());
                 this.chessBoard.setMovesRemaining(board.getMovesRemaining());
                 this.chessBoard.setGameEnded(board.getGameEnded());
+                this.chessBoard.setWinner(board.getWinner());
                 chessBoard.printBoard();
                 if (callback != null) callback.run();
             } catch (JsonProcessingException e) {

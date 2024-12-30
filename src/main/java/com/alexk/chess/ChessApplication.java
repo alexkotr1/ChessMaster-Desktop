@@ -399,39 +399,39 @@ public class ChessApplication extends Application {
         String winnerText;
         String textColor;
         ChessEngine.Winner winner = chessEngine.getBoard().getWinner();
-
         if (winner == ChessEngine.Winner.Draw) {
             winnerText = "It's a Tie!";
             textColor = "gold";
         } else if (winner == ChessEngine.Winner.White) {
             winnerText = "White Wins!";
             textColor = "white";
-        } else {
+        } else if (winner == ChessEngine.Winner.Black) {
             winnerText = "Black Wins!";
             textColor = "black";
+        } else {
+            System.err.println("Error: Unknown winner!");
+            winnerText = "Error: Unknown winner!";
+            textColor = "red";
         }
 
-        winnerLabel.setText(winnerText);
-        winnerLabel.setStyle("-fx-text-fill: " + textColor + "; " +
-                "-fx-font-size: 34px; " +
-                "-fx-font-weight: bold; " +
-                "-fx-alignment: center;");
-        winnerLabel.setAlignment(Pos.CENTER);
-        winnerLabel.setVisible(true);
 
-        double winnerLayoutX = (rightPanel.getPrefWidth() - winnerLabel.getWidth()) / 2;
-        double winnerLayoutY = (rightPanel.getPrefHeight() - winnerLabel.getHeight()) / 2;
-        double playAgainLayoutX = (rightPanel.getPrefWidth() - playAgain.getWidth()) / 2;
-        double playAgainLayoutY = winnerLabel.getLayoutY() + winnerLabel.getHeight() + 30;
         Platform.runLater(() -> {
-        rightPanel.getChildren().clear();
-        rightPanel.getChildren().addAll(winnerLabel, playAgain);
+            winnerLabel.setText(winnerText);
+            winnerLabel.setStyle("-fx-text-fill: " + textColor + "; " +
+                    "-fx-font-size: 34px; " +
+                    "-fx-font-weight: bold; " +
+                    "-fx-alignment: center;");
+            winnerLabel.setAlignment(Pos.CENTER);
+            winnerLabel.setVisible(true);
 
-        playAgain.setVisible(true);
-            winnerLabel.setLayoutX(winnerLayoutX);
-            winnerLabel.setLayoutY(winnerLayoutY);
-            playAgain.setLayoutX(playAgainLayoutX);
-            playAgain.setLayoutY(playAgainLayoutY);
+            rightPanel.getChildren().clear();
+            rightPanel.getChildren().addAll(winnerLabel,playAgain);
+
+            playAgain.setVisible(true);
+            winnerLabel.setLayoutX((rightPanel.getPrefWidth() - winnerLabel.getWidth()) / 2);
+            winnerLabel.setLayoutY((rightPanel.getPrefHeight() - winnerLabel.getHeight()) / 2);
+            playAgain.setLayoutX((rightPanel.getPrefWidth() - playAgain.getWidth()) / 2);
+            playAgain.setLayoutY(winnerLabel.getLayoutY() + winnerLabel.getHeight() + 30);
         });
     }
 

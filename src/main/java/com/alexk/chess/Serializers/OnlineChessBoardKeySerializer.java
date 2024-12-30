@@ -22,6 +22,7 @@ public class OnlineChessBoardKeySerializer extends JsonSerializer<OnlineChessBoa
         keyBuilder.append("movesRemaining:").append(value.getMovesRemaining());
         keyBuilder.append("gameEnded:").append(value.getGameEnded());
         keyBuilder.append("state:").append(value.getState());
+        keyBuilder.append("winner:").append(value.getWinner());
 
         gen.writeFieldName(keyBuilder.toString());
     }

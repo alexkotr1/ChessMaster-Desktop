@@ -1,6 +1,7 @@
 package com.alexk.chess.Serializers;
 
 import com.alexk.chess.ChessBoard.OnlineChessBoard;
+import com.alexk.chess.ChessEngine.ChessEngine;
 import com.alexk.chess.Pionia.Pioni;
 import com.alexk.chess.Pionia.PioniFactory;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -17,6 +18,7 @@ public class OnlineChessBoardKeyDeserializer extends KeyDeserializer {
         boolean whiteTurn = true;
         boolean gameEnded = false;
         int movesRemaining = 100;
+        ChessEngine.Winner winner = ChessEngine.Winner.Draw;
         String state = "";
         for (String part : parts) {
             if (part.startsWith("whiteTurn:")) {
@@ -27,6 +29,8 @@ public class OnlineChessBoardKeyDeserializer extends KeyDeserializer {
                 gameEnded = Boolean.parseBoolean(part.split(":")[1]);
             } else if (part.startsWith("state:")) {
                 state = part.split(":")[1];
+            } else if (part.equals("winner:")){
+                winner = ChessEngine.Winner.valueOf(part.split(":")[1]);
             }
             else {
                 String[] pioniParts = part.split("-");
@@ -43,6 +47,6 @@ public class OnlineChessBoardKeyDeserializer extends KeyDeserializer {
             }
         }
 
-        return new OnlineChessBoard(Pionia, whiteTurn, movesRemaining, gameEnded,state);
+        return new OnlineChessBoard(Pionia, whiteTurn, movesRemaining, gameEnded,state,winner);
     }
 }

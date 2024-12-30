@@ -140,17 +140,18 @@ public class Main extends Application implements WebSocketMessageListener{
 
     @Override
     public void onMessageReceived(Message message) {
-        Platform.runLater(() -> {
             //System.out.println("Received message with ID:" + message.getMessageID());
             if (message.getCode() == RequestCodes.SECOND_PLAYER_JOINED) {
-                chessApp = new ChessApplication();
-                chessApp.setMode(false);
-                chessApp.setWebSocket(webSocket);
-                chessApp.start(primaryStage);
-                dialogStage.close();
-            } else if (message.getCode() == RequestCodes.ENEMY_MOVE){
+                Platform.runLater(() -> {
+                    chessApp = new ChessApplication();
+                    chessApp.setMode(false);
+                    chessApp.setWebSocket(webSocket);
+                    chessApp.start(primaryStage);
+                    dialogStage.close();
+                });
+            }
+            else if (message.getCode() == RequestCodes.ENEMY_MOVE){
                 chessApp.chessEngine.refreshBoard(()->chessApp.updateAfterEnemyMove());
             }
-        });
     }
 }
