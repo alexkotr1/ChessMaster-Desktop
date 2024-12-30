@@ -2,6 +2,7 @@ package com.alexk.chess;
 
 import com.alexk.chess.ChessEngine.ChessEngine;
 import com.alexk.chess.Pionia.Pioni;
+import com.alexk.chess.Pionia.Stratiotis;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -57,7 +58,7 @@ public class ChessApplication extends Application {
     private AnchorPane rightPanel;
     private Stage stage;
     private Proxy proxy;
-    private ChessEngine chessEngine;
+    public ChessEngine chessEngine;
     private boolean offlineMode;
     private WebSocket webSocket;
 
@@ -76,7 +77,7 @@ public class ChessApplication extends Application {
         rightPanel = new AnchorPane();
         proxy = new Proxy(offlineMode, webSocket);
         chessEngine = proxy.chessEngine;
-
+        System.out.println("Offline Mode:" + offlineMode);
         ImageView background = new ImageView(new Image("chessBoard.jpeg"));
         background.setFitWidth(800);
         background.setFitHeight(800);
@@ -181,7 +182,7 @@ public class ChessApplication extends Application {
                     long elapsedTime = (now - whiteTimerStartTime + whitePauseTime) / 1_000_000_000;
                     long remainingTime = minutesAllowed - elapsedTime;
                     if (remainingTime <= 0) {
-                        chessEngine.setGameEnded(true, ChessEngine.Winner.Black);
+                        chessEngine.getBoard().setGameEndedWinner(true, ChessEngine.Winner.Black);
                         showWinScreen();
                     }
                     long minutes = remainingTime / 60;
@@ -211,7 +212,7 @@ public class ChessApplication extends Application {
                     long elapsedTime = (now - blackTimerStartTime + blackPauseTime) / 1_000_000_000;
                     long remainingTime = minutesAllowed - elapsedTime;
                     if (remainingTime <= 0) {
-                        chessEngine.setGameEnded(true, ChessEngine.Winner.White);
+                        chessEngine.getBoard().setGameEndedWinner(true, ChessEngine.Winner.White);
                         showWinScreen();
                     }
                     long minutes = remainingTime / 60;
@@ -281,14 +282,17 @@ public class ChessApplication extends Application {
         });
 
         piece.setOnMouseDragged(event -> {
-            if (chessEngine.getBoard().getWhiteTurn() != p.getIsWhite() || chessEngine.getGameEnded()) return;
+            if (chessEngine.getBoard().getWhiteTurn() != p.getIsWhite() || chessEngine.getBoard().getGameEnded()){
+                resetToOriginalPosition(p, piece);
+                return;
+            }
             piece.setEffect(null);
             piece.setLayoutX(event.getSceneX() - mouseX);
             piece.setLayoutY(event.getSceneY() - mouseY);
         });
 
         piece.setOnMouseReleased(event -> {
-            if (chessEngine.getBoard().getWhiteTurn() != p.getIsWhite() || chessEngine.getGameEnded()) return;
+            if (chessEngine.getBoard().getWhiteTurn() != p.getIsWhite() || chessEngine.getBoard().getGameEnded()) return;
             for (ImageView indicator : possibleMoveIndicators.values()) {
                 indicator.setVisible(false);
             }
@@ -300,6 +304,12 @@ public class ChessApplication extends Application {
             }
             for (Pioni pioni : res) {
                 ImageView pieceImage = pieces.get(pioni);
+//                for (Pioni pawn : pieces.keySet()){
+//                    if (pawn.hashCode() == pioni.hashCode()) {
+//                        pieceImage = pieces.get(pawn);
+//                    }
+//                }
+                assert pieceImage != null;
                 if (pioni.getCaptured()) pieceImage.setVisible(false);
                 int[] newCoordinates = getCoordinates(pioni.getXPos(), pioni.getYPos());
                 pieceImage.setLayoutX(newCoordinates[0] - piece.getFitWidth() / 2);
@@ -307,7 +317,7 @@ public class ChessApplication extends Application {
             }
             switchTurnAnimation(p.getIsWhite());
             playPiecePlacementSound();
-            if (chessEngine.getGameEnded()) showWinScreen();
+            if (chessEngine.getBoard().getGameEnded()) showWinScreen();
             toggleTimer();
             updateCapturedPieces();
         });
@@ -387,7 +397,7 @@ public class ChessApplication extends Application {
     private void showWinScreen() {
         String winnerText;
         String textColor;
-        ChessEngine.Winner winner = chessEngine.getWinner();
+        ChessEngine.Winner winner = chessEngine.getBoard().getWinner();
 
         if (winner == ChessEngine.Winner.Draw) {
             winnerText = "It's a Tie!";
@@ -505,7 +515,23 @@ public class ChessApplication extends Application {
             blackTimerRunning = false;
         }
     }
-
+    public void updateAfterEnemyMove() {
+        for (Pioni p : chessEngine.getBoard().getPionia()) {
+            ImageView piece = pieces.get(p);
+            if (piece == null) {
+                addPiece(root, p);
+            } else {
+                int[] coordinates = getCoordinates(p.getXPos(), p.getYPos());
+                piece.setLayoutX(coordinates[0] - piece.getFitWidth() / 2);
+                piece.setLayoutY(coordinates[1] - piece.getFitHeight() / 2);
+                piece.setVisible(!p.getCaptured());
+            }
+        }
+        switchTurnAnimation(chessEngine.getBoard().getWhiteTurn());
+        toggleTimer();
+        updateCapturedPieces();
+        playPiecePlacementSound();
+    }
     public static void main(String[] args) {
         launch();
     }

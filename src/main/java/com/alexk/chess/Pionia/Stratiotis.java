@@ -16,10 +16,13 @@ public class Stratiotis extends Pioni implements Serializable {
             @JsonProperty("isWhite") Boolean isWhite,
             @JsonProperty("chessBoard") ChessBoard chessBoard,
             @JsonProperty("xpos") char initialX,
-            @JsonProperty("ypos") int initialY
+            @JsonProperty("ypos") int initialY,
+            @JsonProperty("id") String id,
+            @JsonProperty("captured") Boolean captured
     ) {
-        super(isWhite, chessBoard, initialX, initialY);
+        super(isWhite, chessBoard, initialX, initialY, id, captured);
     }
+
 
     @Override
     public boolean isLegalMove(char x, int y) {

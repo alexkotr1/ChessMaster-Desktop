@@ -3,6 +3,7 @@ package com.alexk.chess.ChessEngine;
 import com.alexk.chess.ChessBoard.ChessBoard;
 import com.alexk.chess.Pionia.Pioni;
 
+import javax.security.auth.callback.Callback;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -14,8 +15,6 @@ public abstract class ChessEngine  {
     public abstract HashMap<Pioni,ArrayList<int[]>> kingCheckMate(boolean white);
     public abstract boolean stalemateCheck(boolean white);
     public abstract boolean checkDumbMove(Pioni p, int[] dest);
-    public abstract void setGameEnded(Boolean gameEnded, Winner winner);
-    public abstract Boolean getGameEnded();
-    public abstract Winner getWinner();
     public abstract ChessBoard getBoard();
+    public abstract void refreshBoard(Runnable callback);
 }

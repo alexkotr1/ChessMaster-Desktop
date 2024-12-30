@@ -1,5 +1,6 @@
 package com.alexk.chess.ChessBoard;
 
+import com.alexk.chess.ChessEngine.ChessEngine;
 import com.alexk.chess.Pionia.Pioni;
 
 import java.util.ArrayList;
@@ -16,4 +17,7 @@ public abstract class ChessBoard {
     public abstract void setMovesRemaining(int movesRemaining);
     public abstract int getMovesRemaining();
     public abstract void capture(Pioni p);
+    public abstract void setGameEndedWinner(Boolean gameEnded, ChessEngine.Winner winner);
+    public abstract Boolean getGameEnded();
+    public abstract ChessEngine.Winner getWinner();
 }

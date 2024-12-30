@@ -1,14 +1,17 @@
 package com.alexk.chess.ChessBoard;
 
+import com.alexk.chess.ChessEngine.ChessEngine;
 import com.alexk.chess.Pionia.*;
 import com.alexk.chess.Utilities;
 
 import java.util.ArrayList;
 
 public class LocalChessBoard extends ChessBoard {
-    private final ArrayList<Pioni> Pionia = new ArrayList<>();
+    private final ArrayList<Pioni> pionia = new ArrayList<>();
     private boolean whiteTurn = true;
     private int movesRemaining = 100;
+    private Boolean gameEnded = false;
+    private ChessEngine.Winner winner = null;
 
     public void placePioniAt(Pioni p, char xPos, int yPos){
         p.setXPos(xPos);
@@ -22,41 +25,43 @@ public class LocalChessBoard extends ChessBoard {
     }
     public void loadBoard(){
         for (int x = 1;x<=16;x++){
-            Pionia.add(new Stratiotis(x < 9,this, Utilities.int2Char(x < 9 ? x : x - 8 ),x < 9 ? 2 : 7));
+            pionia.add(new Stratiotis(x < 9,this, Utilities.int2Char(x < 9 ? x : x - 8 ),x < 9 ? 2 : 7,null,false));
         }
         for (int x = 0;x<2;x++){
             for (int y = 0;y<4;y++){
                 switch (y){
                     case 0:{
-                        Pionia.add(new Pyrgos(x == 0,this,'A',x == 0 ? 1 : 8));
-                        Pionia.add(new Pyrgos(x == 0,this,'H',x == 0 ? 1 : 8));
+                        pionia.add(new Pyrgos(x == 0,this,'A',x == 0 ? 1 : 8,null,false));
+                        pionia.add(new Pyrgos(x == 0,this,'H',x == 0 ? 1 : 8,null,false));
                         break;
                     }
                     case 1:{
-                        Pionia.add(new Alogo(x == 0,this,'B',x == 0 ? 1 : 8));
-                        Pionia.add(new Alogo(x == 0,this,'G',x == 0 ? 1 : 8));
+                        pionia.add(new Alogo(x == 0,this,'B',x == 0 ? 1 : 8,null,false));
+                        pionia.add(new Alogo(x == 0,this,'G',x == 0 ? 1 : 8,null,false));
                         break;
                     }
                     case 2:{
-                        Pionia.add(new Stratigos(x == 0,this,'C',x == 0 ? 1 : 8));
-                        Pionia.add(new Stratigos(x == 0,this,'F',x == 0 ? 1 : 8));
+                        pionia.add(new Stratigos(x == 0,this,'C',x == 0 ? 1 : 8,null,false));
+                        pionia.add(new Stratigos(x == 0,this,'F',x == 0 ? 1 : 8,null,false));
                         break;
                     }
                     case 3:{
-                        Pionia.add(new Vasilissa(x == 0,this,'D',x == 0 ? 1 : 8));
-                        Pionia.add(new Vasilias(x == 0,this,'E',x == 0 ? 1 : 8));
+                        pionia.add(new Vasilissa(x == 0,this,'D',x == 0 ? 1 : 8,null,false));
+                        pionia.add(new Vasilias(x == 0,this,'E',x == 0 ? 1 : 8,null,false));
                         break;
                     }
                 }
             }
         }
     }
+
+
     public Pioni getPioniAt(char xPos, int yPos){
-        return Pionia.stream().filter(pioni -> Utilities.int2Char(pioni.getPosition()[0]) == xPos && pioni.getPosition()[1] == yPos && !pioni.getCaptured()).findFirst().orElse(null);
+        return pionia.stream().filter(pioni -> Utilities.int2Char(pioni.getPosition()[0]) == xPos && pioni.getPosition()[1] == yPos && !pioni.getCaptured()).findFirst().orElse(null);
     }
 
     public ArrayList<Pioni> getPionia(){
-        return Pionia;
+        return pionia;
     }
     public void move(char xOrig, int yOrig, char xDest,int yDest){
         movesRemaining--;
@@ -72,6 +77,12 @@ public class LocalChessBoard extends ChessBoard {
     public void setWhiteTurn(boolean whiteTurn){ this.whiteTurn = whiteTurn; }
     public void setMovesRemaining(int movesRemaining){ this.movesRemaining = movesRemaining; }
     public int getMovesRemaining(){ return movesRemaining; }
+    public void setGameEndedWinner(Boolean gameEnded, ChessEngine.Winner winner) {
+        this.gameEnded = gameEnded;
+        this.winner = winner;
+    }
+    public Boolean getGameEnded() { return gameEnded; }
+    public ChessEngine.Winner getWinner() { return winner; }
     public void printBoard(){
         System.out.println("   a  b  c  d  e  f  g  h  \n  ------------------------");
         for (int y = 8;y>=1;y--){
@@ -93,7 +104,7 @@ public class LocalChessBoard extends ChessBoard {
     public ChessBoard clone() {
         ChessBoard chessBoard = new LocalChessBoard();
         chessBoard.setWhiteTurn(whiteTurn);
-        for (Pioni p : Pionia){
+        for (Pioni p : pionia){
             Pioni clone = p.clone();
             clone.setChessBoard(chessBoard);
             chessBoard.getPionia().add(clone);

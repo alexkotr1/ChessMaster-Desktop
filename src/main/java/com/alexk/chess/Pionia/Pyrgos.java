@@ -2,6 +2,8 @@ package com.alexk.chess.Pionia;
 
 import com.alexk.chess.ChessBoard.ChessBoard;
 import com.alexk.chess.Utilities;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -9,8 +11,16 @@ import java.util.ArrayList;
 public class Pyrgos extends Pioni implements Serializable {
 private boolean moved;
 
-    public Pyrgos(Boolean isWhite, ChessBoard chessBoard, char initialX, int initialY) {
-        super(isWhite, chessBoard, initialX, initialY);
+    @JsonCreator
+    public Pyrgos(
+            @JsonProperty("isWhite") Boolean isWhite,
+            @JsonProperty("chessBoard") ChessBoard chessBoard,
+            @JsonProperty("xpos") char initialX,
+            @JsonProperty("ypos") int initialY,
+            @JsonProperty("id") String id,
+            @JsonProperty("captured") Boolean captured
+    ) {
+        super(isWhite, chessBoard, initialX, initialY, id, captured);
     }
 
     @Override

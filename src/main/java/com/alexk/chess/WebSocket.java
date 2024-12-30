@@ -29,13 +29,13 @@ public class WebSocket {
 
     @OnMessage
     public void onMessage(String message) throws JsonProcessingException {
-        System.out.println("Received raw message: " + message);
+        //System.out.println("Received raw message: " + message);
         Message res = Message.mapper.readValue(message, Message.class);
         if (listener != null) {
             listener.onMessageReceived(res);
         }
+        //System.out.println(Message.pending.containsKey(res.getMessageID()) ? "Found response" : "No response");
         if (Message.pending.containsKey(res.getMessageID())) {
-            System.out.println("Found response");
             Message reply = Message.pending.get(res.getMessageID());
             reply.triggerReplyCallback(res);
             Message.pending.remove(reply.getMessageID());

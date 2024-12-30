@@ -10,8 +10,7 @@ import java.util.HashMap;
 import java.util.stream.Collectors;
 public class LocalChessEngine extends ChessEngine {
     protected final LocalChessBoard chessBoard = new LocalChessBoard();
-    private Boolean gameEnded = false;
-    private ChessEngine.Winner winner = null;
+
     ArrayList<int[]> allPositions = new ArrayList<>();
     public LocalChessEngine() {
         for (int x = 1;x<=8;x++) {
@@ -27,7 +26,7 @@ public class LocalChessEngine extends ChessEngine {
     }
     public ArrayList<Pioni> nextMove(char xOrig, int yOrig, char xDest, int yDest){
         Pioni p = chessBoard.getPioniAt(xOrig,yOrig);
-        if (p == null || p.getIsWhite() != chessBoard.getWhiteTurn() || !p.isLegalMove(xDest,yDest) || getGameEnded()) return null;
+        if (p == null || p.getIsWhite() != chessBoard.getWhiteTurn() || !p.isLegalMove(xDest,yDest) || getBoard().getGameEnded()) return null;
         ArrayList<Pioni> moved = new ArrayList<>();
         moved.add(p);
         Pioni pioniAtDest = chessBoard.getPioniAt(xDest,yDest);
@@ -55,8 +54,8 @@ public class LocalChessEngine extends ChessEngine {
         }
         if (checkKingMat(chessBoard, !p.getIsWhite())) {
             HashMap<Pioni, ArrayList<int[]>> legalMovesWhenEnemyKingThreatened = kingCheckMate(!p.getIsWhite());
-            if (legalMovesWhenEnemyKingThreatened == null || legalMovesWhenEnemyKingThreatened.isEmpty()) setGameEnded(true,p.getIsWhite() ? Winner.White : Winner.Black);
-        } else if (stalemateCheck(!p.getIsWhite()) || chessBoard.getMovesRemaining() == 0) setGameEnded(true, Winner.Draw);
+            if (legalMovesWhenEnemyKingThreatened == null || legalMovesWhenEnemyKingThreatened.isEmpty()) getBoard().setGameEndedWinner(true,p.getIsWhite() ? Winner.White : Winner.Black);
+        } else if (stalemateCheck(!p.getIsWhite()) || chessBoard.getMovesRemaining() == 0) getBoard().setGameEndedWinner(true, Winner.Draw);
         if (!moved.isEmpty()) chessBoard.setWhiteTurn(!chessBoard.getWhiteTurn());
         return moved;
     }
@@ -65,16 +64,16 @@ public class LocalChessEngine extends ChessEngine {
             Pioni upgradedPioni;
             switch (type) {
                 case "Alogo":
-                    upgradedPioni = new Alogo(p.getIsWhite(), chessBoard, p.getXPos(), p.getYPos());
+                    upgradedPioni = new Alogo(p.getIsWhite(), chessBoard, p.getXPos(), p.getYPos(),null, false);
                     break;
                 case "Pyrgos":
-                    upgradedPioni = new Pyrgos(p.getIsWhite(), chessBoard, p.getXPos(), p.getYPos());
+                    upgradedPioni = new Pyrgos(p.getIsWhite(), chessBoard, p.getXPos(), p.getYPos(),null, false);
                     break;
                 case "Stratigos":
-                    upgradedPioni = new Stratigos(p.getIsWhite(), chessBoard, p.getXPos(), p.getYPos());
+                    upgradedPioni = new Stratigos(p.getIsWhite(), chessBoard, p.getXPos(), p.getYPos(),null, false);
                     break;
                 case "Vasilissa":
-                    upgradedPioni = new Vasilissa(p.getIsWhite(), chessBoard, p.getXPos(), p.getYPos());
+                    upgradedPioni = new Vasilissa(p.getIsWhite(), chessBoard, p.getXPos(), p.getYPos(),null, false);
                     break;
                 default:
                     System.err.println("Something went wrong!");
@@ -136,11 +135,7 @@ public class LocalChessEngine extends ChessEngine {
         testChessBoard.move(p.getXPos(), p.getYPos(), Utilities.int2Char(dest[0]), dest[1]);
         return checkKingMat(testChessBoard,p.getIsWhite());
     }
-    public void setGameEnded(Boolean gameEnded, ChessEngine.Winner winner) {
-        this.gameEnded = gameEnded;
-        this.winner = winner;
-    }
-    public Boolean getGameEnded() { return gameEnded; }
-    public ChessBoard getBoard(){ return chessBoard; }
-    public Winner getWinner() { return winner; }
+    public ChessBoard getBoard() { return this.chessBoard; }
+    public void refreshBoard(Runnable callback) {}
+
 }

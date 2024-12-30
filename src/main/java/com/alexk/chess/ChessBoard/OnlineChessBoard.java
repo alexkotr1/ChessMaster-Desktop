@@ -1,87 +1,82 @@
 package com.alexk.chess.ChessBoard;
 
-import com.alexk.chess.Message;
-import com.alexk.chess.Pionia.Pioni;
-import com.alexk.chess.RequestCodes;
+import com.alexk.chess.ChessEngine.ChessEngine;
+import com.alexk.chess.Pionia.*;
 import com.alexk.chess.Utilities;
-import com.alexk.chess.WebSocket;
 
 import java.util.ArrayList;
-import java.util.concurrent.CompletableFuture;
 
 public class OnlineChessBoard extends ChessBoard {
-    private WebSocket socket;
-    public OnlineChessBoard(WebSocket socket) {
-        this.socket = socket;
+    private final ArrayList<Pioni> pionia = new ArrayList<>();
+    private boolean whiteTurn = true;
+    private int movesRemaining = 100;
+    private Boolean gameEnded = false;
+    private ChessEngine.Winner winner = null;
+    private String state;
+    public OnlineChessBoard(ArrayList<Pioni> pionia, boolean whiteTurn, int movesRemaining, boolean gameEnded, String state){
+        this.pionia.addAll(pionia);
+        this.whiteTurn = whiteTurn;
+        this.movesRemaining = movesRemaining;
+        this.gameEnded = gameEnded;
+        this.state = state;
     }
-    public boolean isDangerousPosition(char xOrig, int yOrig, boolean white) {
-        CompletableFuture<Boolean> future = new CompletableFuture<>();
-
-        Message message = new Message();
-        message.setData(new int[]{ Utilities.char2Int(xOrig), yOrig, white ? 1 : 0 });
-        message.onReply(m -> {
-            boolean isDangerous = Boolean.parseBoolean(m.getData());
-            future.complete(isDangerous);
-        });
-        message.send(socket);
-        try {
-            return future.get();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
+    public OnlineChessBoard(){
+        this.loadBoard();
+    }
+    public boolean isDangerousPosition(char xOrig, int yOrig, boolean white){
+        for (Pioni p : getPionia().stream().filter(pioni -> pioni.getIsWhite() != white).toList()) {
+            if (p.isLegalMove(xOrig,yOrig)) return true;
         }
+        return false;
+    }
+    public Pioni getPioniAt(char xPos, int yPos){
+        return pionia.stream().filter(pioni -> Utilities.int2Char(pioni.getPosition()[0]) == xPos && pioni.getPosition()[1] == yPos && !pioni.getCaptured()).findFirst().orElse(null);
     }
 
-
-    public Pioni getPioniAt(char xPos, int yPos) {
-        Message message = new Message();
-        message.setCode(RequestCodes.GET_PIONI_AT_POS);
-        message.setData(new int[]{ Utilities.char2Int(xPos), yPos });
-        message.send(socket);
-        return null;
+    public ArrayList<Pioni> getPionia(){
+        return pionia;
     }
+    public void setPionia(ArrayList<Pioni> pionia){
+        this.pionia.clear();
+        this.pionia.addAll(pionia);
+    }
+    public Boolean getWhiteTurn(){
+        return whiteTurn;
+    }
+    public Pioni getPioniAt(int x, int y){
+        return getPioniAt(Utilities.int2Char(x),y);
+    }
+    public String getState() {return state;}
+    public void setState(String state) {this.state = state;}
+    public void setGameEnded(Boolean gameEnded) {this.gameEnded = gameEnded;}
+    public void setGameEndedWinner(Boolean gameEnded, ChessEngine.Winner winner) {}
+    public Boolean getGameEnded() { return gameEnded; }
+    public void setWhiteTurn(boolean whiteTurn){ this.whiteTurn = whiteTurn; }
+    public void setMovesRemaining(int movesRemaining){ this.movesRemaining = movesRemaining; }
 
-    public ArrayList<Pioni> getPionia() {
-        CompletableFuture<ArrayList<Pioni>> future = new CompletableFuture<>();
-        Message message = new Message();
-        message.setCode(RequestCodes.GET_PIONIA);
 
-        message.send(socket);
-        System.out.println(1);
-        System.out.println("Waiting reply for ID: " + message.getMessageID());
-        message.onReply(m -> {
-            System.out.println(2);
-            try {
-                ArrayList<Pioni> pionia = Message.mapper.readValue(m.getData(), Message.mapper.getTypeFactory().constructCollectionType(ArrayList.class, Pioni.class));
-                future.complete(pionia);
-            } catch (Exception e) {
-                e.printStackTrace();
-                future.completeExceptionally(e);
-            }
-        });
-
-        System.out.println(3);
-        try {
-            return future.get();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
+    public void loadBoard(){}
+    public void move(char xOrig, int yOrig, char xDest,int yDest){}
+    public int getMovesRemaining(){ return movesRemaining; }
+    public ChessEngine.Winner getWinner() { return winner; }
+    public void printBoard(){
+        System.out.println("   a  b  c  d  e  f  g  h  \n  ------------------------");
+        for (int y = 8;y>=1;y--){
+            System.out.printf("%d  %s  %s  %s  %s  %s  %s  %s  %s %d%n",y,
+                    this.getPioniAt('A',y) == null ? " " : this.getPioniAt('A',y).print(),
+                    this.getPioniAt('B',y) == null ? " " : this.getPioniAt('B',y).print(),
+                    this.getPioniAt('C',y) == null ? " " : this.getPioniAt('C',y).print(),
+                    this.getPioniAt('D',y) == null ? " " : this.getPioniAt('D',y).print(),
+                    this.getPioniAt('E',y) == null ? " " : this.getPioniAt('E',y).print(),
+                    this.getPioniAt('F',y) == null ? " " : this.getPioniAt('F',y).print(),
+                    this.getPioniAt('G',y) == null ? " " : this.getPioniAt('G',y).print(),
+                    this.getPioniAt('H',y) == null ? " " : this.getPioniAt('H',y).print(),
+                    y);
         }
+        System.out.println("  ------------------------\n   a  b  c  d  e  f  g  h");
+
     }
+    public void capture(Pioni p){}
+    public void placePioniAt(Pioni p, char xPos, int yPos){}
 
-
-    public Boolean getWhiteTurn() {
-        return null;
-    }
-
-    public int getMovesRemaining() {
-        return 0;
-    }
-
-    public void placePioniAt(Pioni p, char xPos, int yPos) {}
-    public void move(char xOrig, int yOrig, char xDest, int yDest) {}
-    public void loadBoard() {}
-    public void capture(Pioni p) {}
-    public void setWhiteTurn(boolean whiteTurn) {}
-    public void setMovesRemaining(int movesRemaining) {}
 }

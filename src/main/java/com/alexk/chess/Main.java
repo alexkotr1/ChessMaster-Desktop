@@ -25,6 +25,7 @@ public class Main extends Application implements WebSocketMessageListener{
     private Stage primaryStage = new Stage();
     private static Label messageLabel;
     public static WebSocket webSocket;
+    private ChessApplication chessApp;
     @Override
     public void start(Stage primaryStage)  {
         VBox root = getDialogStage();
@@ -86,17 +87,24 @@ public class Main extends Application implements WebSocketMessageListener{
                 message.send(webSocket);
                 GameSession.setState(GameSession.GameState.WAITING_FOR_PLAYER_JOIN);
                 message.onReply(res->{
-                    if (res.getCode() == RequestCodes.JOIN_GAME_FAILURE) Platform.runLater(() -> messageLabel.setText("Code: " + res.getData()));
-                    ChessApplication chessApp = new ChessApplication();
-                    chessApp.setMode(false);
-                    chessApp.setWebSocket(webSocket);
-                    chessApp.start(primaryStage);
-                    dialogStage.close();
+                    System.out.println("RECEIVED RES: " + res.getCode());
+                    if (res.getCode() == RequestCodes.JOIN_GAME_FAILURE) {
+                        Platform.runLater(() -> messageLabel.setText("Invalid Code!"));
+                        return;
+                    }
+                    Platform.runLater(() -> {
+                        chessApp = new ChessApplication();
+                        chessApp.setMode(false);
+                        chessApp.setWebSocket(webSocket);
+                        chessApp.start(primaryStage);
+                        dialogStage.close();
+                    });
+
                 });
                 return;
             }
             if (isOfflineMode) {
-                ChessApplication chessApp = new ChessApplication();
+                chessApp = new ChessApplication();
                 chessApp.setMode(true);
                 chessApp.start(primaryStage);
                 dialogStage.close();
@@ -105,11 +113,9 @@ public class Main extends Application implements WebSocketMessageListener{
                 message.setCode(RequestCodes.HOST_GAME);
                 message.send(webSocket);
                 GameSession.setState(GameSession.GameState.WAITING_FOR_HOST_CODE);
-                System.out.println("Waiting for response on message with ID:" + message.getMessageID());
                 message.onReply(res->{
                     GameSession.setState(GameSession.GameState.WAITING_FOR_PLAYER_JOIN);
                     Platform.runLater(() -> messageLabel.setText("Code: " + res.getData()));
-
                 });
             }
         });
@@ -135,13 +141,15 @@ public class Main extends Application implements WebSocketMessageListener{
     @Override
     public void onMessageReceived(Message message) {
         Platform.runLater(() -> {
-            System.out.println("Received message with ID:" + message.getMessageID());
+            //System.out.println("Received message with ID:" + message.getMessageID());
             if (message.getCode() == RequestCodes.SECOND_PLAYER_JOINED) {
-                ChessApplication chessApp = new ChessApplication();
+                chessApp = new ChessApplication();
                 chessApp.setMode(false);
                 chessApp.setWebSocket(webSocket);
                 chessApp.start(primaryStage);
                 dialogStage.close();
+            } else if (message.getCode() == RequestCodes.ENEMY_MOVE){
+                chessApp.chessEngine.refreshBoard(()->chessApp.updateAfterEnemyMove());
             }
         });
     }

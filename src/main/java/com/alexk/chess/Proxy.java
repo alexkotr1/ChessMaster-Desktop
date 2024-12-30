@@ -31,8 +31,9 @@ public class Proxy{
 
     public ArrayList<int[]> onPawnDrag(Pioni p){
         ArrayList<int[]> possibleMoveIndicators = new ArrayList<>();
-        if (chessEngine.getBoard().getWhiteTurn() != p.getIsWhite() || chessEngine.getGameEnded()) return null;
+        if (chessEngine.getBoard().getWhiteTurn() != p.getIsWhite() || chessEngine.getBoard().getGameEnded()) return null;
         HashMap<Pioni, ArrayList<int[]>> legalMovesWhenKingThreatened = chessEngine.kingCheckMate(p.getIsWhite());
+        System.out.println(p.getIsWhite());
         if (legalMovesWhenKingThreatened != null && !legalMovesWhenKingThreatened.isEmpty()) {
             if (legalMovesWhenKingThreatened.get(p) == null) return null;
             for (int[] dest : legalMovesWhenKingThreatened.get(p)) {
@@ -50,10 +51,7 @@ public class Proxy{
         return possibleMoveIndicators;
     }
     public ArrayList<Pioni> requestMove(Pioni p, int[] position) {
-        if (offlineMode) return chessEngine.nextMove(p.getXPos(), p.getYPos(), Utilities.int2Char(position[0]), position[1]);
-        chessEngine.nextMove(p.getXPos(), p.getYPos(), Utilities.int2Char(position[0]), position[1]);
-
-        return null;
+        return chessEngine.nextMove(p.getXPos(), p.getYPos(), Utilities.int2Char(position[0]), position[1]);
     }
 
 }
