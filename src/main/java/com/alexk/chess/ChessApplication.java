@@ -315,13 +315,13 @@ public class ChessApplication extends Application {
                 pieceImage.setLayoutX(newCoordinates[0] - piece.getFitWidth() / 2);
                 pieceImage.setLayoutY(newCoordinates[1] - piece.getFitHeight() / 2);
             }
-            switchTurnAnimation(p.getIsWhite());
+            switchTurnAnimation();
             playPiecePlacementSound();
             if (chessEngine.getBoard().getGameEnded()) showWinScreen();
             toggleTimer();
             updateCapturedPieces();
         });
-        switchTurnAnimation(p.getIsWhite());
+        switchTurnAnimation();
         pieces.put(p, piece);
         root.getChildren().add(piece);
     }
@@ -487,8 +487,9 @@ public class ChessApplication extends Application {
         return selection;
     }
 
-    private void switchTurnAnimation(boolean isWhite) {
-        if (isWhite) {
+    private void switchTurnAnimation() {
+        boolean turn = chessEngine.getBoard().getWhiteTurn();
+        if (!turn) {
             for (Pioni p : pieces.keySet()) {
                 if (!p.getIsWhite()) pieces.get(p).setEffect(blackTurnEffect);
                 else pieces.get(p).setEffect(null);
@@ -527,10 +528,11 @@ public class ChessApplication extends Application {
                 piece.setVisible(!p.getCaptured());
             }
         }
-        switchTurnAnimation(chessEngine.getBoard().getWhiteTurn());
+        switchTurnAnimation();
         toggleTimer();
         updateCapturedPieces();
         playPiecePlacementSound();
+        if (chessEngine.getBoard().getGameEnded()) showWinScreen();
     }
     public static void main(String[] args) {
         launch();
