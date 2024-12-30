@@ -353,12 +353,13 @@ public class ChessApplication extends Application {
 
             HBox hbox;
             if (x % 4 < targetBox.getChildren().size()) {
+
                 hbox = (HBox) targetBox.getChildren().get(x % 4);
-                hbox.getChildren().clear();
+                Platform.runLater(()->hbox.getChildren().clear());
             } else {
                 hbox = new HBox(5);
                 hbox.setAlignment(Pos.CENTER);
-                targetBox.getChildren().add(hbox);
+                Platform.runLater(()->targetBox.getChildren().add(hbox));
             }
 
             for (String path : imagePaths) {
@@ -366,7 +367,7 @@ public class ChessApplication extends Application {
                 imageView.setFitWidth(40);
                 imageView.setFitHeight(40);
                 imageView.setPreserveRatio(true);
-                hbox.getChildren().add(imageView);
+                Platform.runLater(()->hbox.getChildren().add(imageView));
             }
         }
     }
@@ -418,15 +419,19 @@ public class ChessApplication extends Application {
         winnerLabel.setAlignment(Pos.CENTER);
         winnerLabel.setVisible(true);
 
+        double winnerLayoutX = (rightPanel.getPrefWidth() - winnerLabel.getWidth()) / 2;
+        double winnerLayoutY = (rightPanel.getPrefHeight() - winnerLabel.getHeight()) / 2;
+        double playAgainLayoutX = (rightPanel.getPrefWidth() - playAgain.getWidth()) / 2;
+        double playAgainLayoutY = winnerLabel.getLayoutY() + winnerLabel.getHeight() + 30;
+        Platform.runLater(() -> {
         rightPanel.getChildren().clear();
         rightPanel.getChildren().addAll(winnerLabel, playAgain);
 
         playAgain.setVisible(true);
-        Platform.runLater(() -> {
-            winnerLabel.setLayoutX((rightPanel.getPrefWidth() - winnerLabel.getWidth()) / 2);
-            winnerLabel.setLayoutY((rightPanel.getPrefHeight() - winnerLabel.getHeight()) / 2);
-            playAgain.setLayoutX((rightPanel.getPrefWidth() - playAgain.getWidth()) / 2);
-            playAgain.setLayoutY(winnerLabel.getLayoutY() + winnerLabel.getHeight() + 30);
+            winnerLabel.setLayoutX(winnerLayoutX);
+            winnerLabel.setLayoutY(winnerLayoutY);
+            playAgain.setLayoutX(playAgainLayoutX);
+            playAgain.setLayoutY(playAgainLayoutY);
         });
     }
 
