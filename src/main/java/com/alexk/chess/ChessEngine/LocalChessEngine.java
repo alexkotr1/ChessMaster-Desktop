@@ -44,7 +44,7 @@ public class LocalChessEngine extends ChessEngine {
             int[] orig = p.getPosition();
             chessBoard.move(xOrig,yOrig,Utilities.int2Char(dest[0] > orig[0] ? orig[0] + 2 : orig[0] - 2),yOrig);
             chessBoard.move(Utilities.int2Char(dest[0]),dest[1],Utilities.int2Char(dest[0] > orig[0] ? orig[0] - 1 : orig[0] + 1),yOrig);
-            return null;
+            return moved;
         }
         chessBoard.move(xOrig,yOrig,xDest,yDest);
         if (pioniAtDest != null && p.getIsWhite() != pioniAtDest.getIsWhite()) {
@@ -55,7 +55,8 @@ public class LocalChessEngine extends ChessEngine {
         if (checkKingMat(chessBoard, !p.getIsWhite())) {
             HashMap<Pioni, ArrayList<int[]>> legalMovesWhenEnemyKingThreatened = kingCheckMate(!p.getIsWhite());
             if (legalMovesWhenEnemyKingThreatened == null || legalMovesWhenEnemyKingThreatened.isEmpty()) getBoard().setGameEndedWinner(true,p.getIsWhite() ? Winner.White : Winner.Black);
-        } else if (stalemateCheck(!p.getIsWhite()) || chessBoard.getMovesRemaining() == 0) getBoard().setGameEndedWinner(true, Winner.Draw);
+        }
+        else if (stalemateCheck(!p.getIsWhite()) || chessBoard.getMovesRemaining() == 0) getBoard().setGameEndedWinner(true, Winner.Draw);
         if (!moved.isEmpty()) chessBoard.setWhiteTurn(!chessBoard.getWhiteTurn());
         return moved;
     }

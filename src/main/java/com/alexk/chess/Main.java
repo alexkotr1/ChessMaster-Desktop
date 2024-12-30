@@ -151,7 +151,7 @@ public class Main extends Application implements WebSocketMessageListener{
                 });
             }
             else if (message.getCode() == RequestCodes.ENEMY_MOVE){
-                chessApp.chessEngine.refreshBoard(()->chessApp.updateAfterEnemyMove());
+                Platform.runLater(()->chessApp.chessEngine.refreshBoard(()->chessApp.updateAfterEnemyMove()));
             }
     }
 }

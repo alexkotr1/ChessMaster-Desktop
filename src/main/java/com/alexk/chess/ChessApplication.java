@@ -298,18 +298,14 @@ public class ChessApplication extends Application {
             }
             int[] position = coordinatesToPosition((int) (event.getSceneX() - mouseX), (int) (event.getSceneY() - mouseY));
             ArrayList<Pioni> res = proxy.requestMove(p,position);
+            System.out.println("RES");
+            System.out.println(res);
             if (res == null) {
                 resetToOriginalPosition(p, piece);
                 return;
             }
             for (Pioni pioni : res) {
                 ImageView pieceImage = pieces.get(pioni);
-//                for (Pioni pawn : pieces.keySet()){
-//                    if (pawn.hashCode() == pioni.hashCode()) {
-//                        pieceImage = pieces.get(pawn);
-//                    }
-//                }
-                assert pieceImage != null;
                 if (pioni.getCaptured()) pieceImage.setVisible(false);
                 int[] newCoordinates = getCoordinates(pioni.getXPos(), pioni.getYPos());
                 pieceImage.setLayoutX(newCoordinates[0] - piece.getFitWidth() / 2);
@@ -396,26 +392,26 @@ public class ChessApplication extends Application {
     }
 
     private void showWinScreen() {
-        String winnerText;
-        String textColor;
-        ChessEngine.Winner winner = chessEngine.getBoard().getWinner();
-        if (winner == ChessEngine.Winner.Draw) {
-            winnerText = "It's a Tie!";
-            textColor = "gold";
-        } else if (winner == ChessEngine.Winner.White) {
-            winnerText = "White Wins!";
-            textColor = "white";
-        } else if (winner == ChessEngine.Winner.Black) {
-            winnerText = "Black Wins!";
-            textColor = "black";
-        } else {
-            System.err.println("Error: Unknown winner!");
-            winnerText = "Error: Unknown winner!";
-            textColor = "red";
-        }
-
-
         Platform.runLater(() -> {
+            String winnerText;
+            String textColor;
+            ChessEngine.Winner winner = chessEngine.getBoard().getWinner();
+
+            if (winner == ChessEngine.Winner.Draw) {
+                winnerText = "It's a Tie!";
+                textColor = "gold";
+            } else if (winner == ChessEngine.Winner.White) {
+                winnerText = "White Wins!";
+                textColor = "white";
+            } else if (winner == ChessEngine.Winner.Black) {
+                winnerText = "Black Wins!";
+                textColor = "black";
+            } else {
+                System.err.println("Error: Unknown winner!");
+                winnerText = "Error: Unknown winner!";
+                textColor = "red";
+            }
+
             winnerLabel.setText(winnerText);
             winnerLabel.setStyle("-fx-text-fill: " + textColor + "; " +
                     "-fx-font-size: 34px; " +
@@ -425,9 +421,10 @@ public class ChessApplication extends Application {
             winnerLabel.setVisible(true);
 
             rightPanel.getChildren().clear();
-            rightPanel.getChildren().addAll(winnerLabel,playAgain);
+            rightPanel.getChildren().addAll(winnerLabel, playAgain);
 
             playAgain.setVisible(true);
+
             winnerLabel.setLayoutX((rightPanel.getPrefWidth() - winnerLabel.getWidth()) / 2);
             winnerLabel.setLayoutY((rightPanel.getPrefHeight() - winnerLabel.getHeight()) / 2);
             playAgain.setLayoutX((rightPanel.getPrefWidth() - playAgain.getWidth()) / 2);
