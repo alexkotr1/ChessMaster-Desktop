@@ -44,6 +44,7 @@ public class LocalChessEngine extends ChessEngine {
             int[] orig = p.getPosition();
             chessBoard.move(xOrig,yOrig,Utilities.int2Char(dest[0] > orig[0] ? orig[0] + 2 : orig[0] - 2),yOrig);
             chessBoard.move(Utilities.int2Char(dest[0]),dest[1],Utilities.int2Char(dest[0] > orig[0] ? orig[0] - 1 : orig[0] + 1),yOrig);
+            chessBoard.setWhiteTurn(!chessBoard.getWhiteTurn());
             return moved;
         }
         chessBoard.move(xOrig,yOrig,xDest,yDest);

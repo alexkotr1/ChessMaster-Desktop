@@ -84,6 +84,7 @@ public class OnlineChessEngine extends ChessEngine {
         for (Pioni refreshed : refreshedPionia) {
             Pioni existing = currentMap.get(refreshed.getID());
             if (existing != null) {
+                System.out.println("Moving " + existing + " to " + refreshed);
                 existing.setPosition(refreshed.getXPos(), refreshed.getYPos());
                 existing.setCaptured(refreshed.getCaptured());
             } else {
