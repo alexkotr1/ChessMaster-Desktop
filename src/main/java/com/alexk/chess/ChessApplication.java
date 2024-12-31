@@ -314,7 +314,7 @@ public class ChessApplication extends Application implements WebSocketMessageLis
                 pieceImage.setLayoutX(newCoordinates[0] - piece.getFitWidth() / 2);
                 pieceImage.setLayoutY(newCoordinates[1] - piece.getFitHeight() / 2);
             }
-            if (p.getType().equals("Stratiotis") && ((p.getIsWhite() && p.getYPos() == 4) || (!p.getIsWhite() && p.getYPos() == 1))) {
+            if (p.getType().equals("Stratiotis") && ((p.getIsWhite() && p.getYPos() == 8) || (!p.getIsWhite() && p.getYPos() == 1))) {
                 selectUpgrade(p.getIsWhite()).thenAccept(str->{
                    Message msg = new Message();
                    msg.setCode(RequestCodes.REQUEST_UPGRADE);
