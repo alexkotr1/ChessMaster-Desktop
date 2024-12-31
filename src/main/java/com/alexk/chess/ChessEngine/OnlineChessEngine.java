@@ -84,7 +84,6 @@ public class OnlineChessEngine extends ChessEngine {
         for (Pioni refreshed : refreshedPionia) {
             Pioni existing = currentMap.get(refreshed.getID());
             if (existing != null) {
-                System.out.println("Moving " + existing + " to " + refreshed);
                 existing.setPosition(refreshed.getXPos(), refreshed.getYPos());
                 existing.setCaptured(refreshed.getCaptured());
             } else {
@@ -99,7 +98,7 @@ public class OnlineChessEngine extends ChessEngine {
         message.setCode(RequestCodes.REQUEST_UPGRADE);
         message.setPioni(p);
         message.setData(type);
-        message.onReply(m -> future.complete(m.getPioniAsObject()));
+        message.onReply(m -> future.complete(m.getPioni()));
         message.send(socket);
         try {
             return future.get();

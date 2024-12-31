@@ -1,8 +1,5 @@
 package com.alexk.chess;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import jakarta.websocket.OnMessage;
-import jakarta.websocket.Session;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -13,8 +10,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-
-import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 
 public class Main extends Application implements WebSocketMessageListener{
@@ -67,7 +63,7 @@ public class Main extends Application implements WebSocketMessageListener{
             isHost = false;
             isOfflineMode = false;
             messageLabel.setText("You have chosen to join a game. Please enter the game code.");
-            codeField.setVisible(true); // Show the code field
+            codeField.setVisible(true);
         });
 
         offlineButton.setOnAction(e -> {
@@ -87,7 +83,6 @@ public class Main extends Application implements WebSocketMessageListener{
                 message.send(webSocket);
                 GameSession.setState(GameSession.GameState.WAITING_FOR_PLAYER_JOIN);
                 message.onReply(res->{
-                    System.out.println("RECEIVED RES: " + res.getCode());
                     if (res.getCode() == RequestCodes.JOIN_GAME_FAILURE) {
                         Platform.runLater(() -> messageLabel.setText("Invalid Code!"));
                         return;
@@ -140,7 +135,6 @@ public class Main extends Application implements WebSocketMessageListener{
 
     @Override
     public void onMessageReceived(Message message) {
-            //System.out.println("Received message with ID:" + message.getMessageID());
             if (message.getCode() == RequestCodes.SECOND_PLAYER_JOINED) {
                 Platform.runLater(() -> {
                     chessApp = new ChessApplication();
@@ -149,9 +143,6 @@ public class Main extends Application implements WebSocketMessageListener{
                     chessApp.start(primaryStage);
                     dialogStage.close();
                 });
-            }
-            else if (message.getCode() == RequestCodes.ENEMY_MOVE){
-                chessApp.chessEngine.refreshBoard(()->chessApp.updateAfterEnemyMove());
             }
     }
 }

@@ -6,11 +6,14 @@ import com.alexk.chess.Serializers.OnlineChessBoardKeyDeserializer;
 import com.alexk.chess.Pionia.Pioni;
 import com.alexk.chess.Serializers.PioniKeyDeserializer;
 import com.alexk.chess.Serializers.PioniKeySerializer;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import jakarta.websocket.Session;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.UUID;
@@ -27,14 +30,14 @@ public class Message implements Serializable {
         module.addKeySerializer(Pioni.class, new PioniKeySerializer());
         module.addKeyDeserializer(Pioni.class, new PioniKeyDeserializer());
         module.addKeySerializer(OnlineChessBoard.class, new OnlineChessBoardKeySerializer());
-        module.addKeyDeserializer(OnlineChessBoardKeyDeserializer.class, new OnlineChessBoardKeyDeserializer());
+        module.addKeyDeserializer(OnlineChessBoard.class, new OnlineChessBoardKeyDeserializer());
         mapper.registerModule(module);
     }
 
     public String messageID;
     private RequestCodes code;
     private String data;
-    private String pioni; // Optional field, can be null
+    private Pioni pioni;
     private Consumer<Message> replyCallback;
     public static final Map<String, Message> pending = new ConcurrentHashMap<>();
 
@@ -71,39 +74,31 @@ public class Message implements Serializable {
         }
     }
 
-    public String getPioni() {
+    public Pioni getPioni() {
         return pioni;
     }
 
     public void setPioni(Pioni pioni) {
-        if (pioni == null) {
-            this.pioni = null; // Explicitly set null if no pioni is provided
-            return;
-        }
-        try {
-            this.pioni = mapper.writeValueAsString(pioni);
-        } catch (JsonProcessingException e) {
-            System.err.println("Error serializing pioni: " + e.getMessage());
-        }
-    }
-
-    public Pioni getPioniAsObject() {
-        if (pioni == null || pioni.isEmpty()) {
-            return null; // Return null if pioni is not set or empty
-        }
-        try {
-            return mapper.readValue(pioni, Pioni.class);
-        } catch (JsonProcessingException e) {
-            System.err.println("Error deserializing pioni: " + e.getMessage());
-        }
-        return null;
+        this.pioni = pioni;
     }
 
     public void send(WebSocket socket) {
         try {
             String json = mapper.writeValueAsString(this);
             socket.sendMessage(json);
+            System.out.println("Sending message: " + json);
         } catch (JsonProcessingException e) {
+            System.err.println("Error sending message: " + e.getMessage());
+        }
+    }
+    public void send(WebSocket socket, Message replyTo) {
+        try {
+            if (replyTo != null) {
+                this.messageID = replyTo.messageID;
+            }
+            String json = mapper.writeValueAsString(this);
+            socket.sendMessage(json);
+        } catch (IOException e) {
             System.err.println("Error sending message: " + e.getMessage());
         }
     }

@@ -25,15 +25,17 @@ import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
 import javax.sound.sampled.LineEvent;
+import javafx.concurrent.Task;
 import java.io.BufferedInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 
-public class ChessApplication extends Application {
+public class ChessApplication extends Application implements WebSocketMessageListener {
     private final HashMap<Pioni, ImageView> pieces = new HashMap<>();
     private double mouseX;
     private double mouseY;
@@ -73,6 +75,7 @@ public class ChessApplication extends Application {
     }
 
     private void initialize() {
+        if (!offlineMode) webSocket.setListener(this);
         root = new AnchorPane();
         rightPanel = new AnchorPane();
         proxy = new Proxy(offlineMode, webSocket);
@@ -277,7 +280,9 @@ public class ChessApplication extends Application {
             ArrayList<int[]> moveIndicators = proxy.onPawnDrag(p);
             if (moveIndicators == null) return;
             for (int[] moveIndicator : moveIndicators) {
-                possibleMoveIndicators.get(String.valueOf(Utilities.int2Char(moveIndicator[0])) + moveIndicator[1]).setVisible(true);
+                String str = String.valueOf(Utilities.int2Char(moveIndicator[0])) + moveIndicator[1];
+                possibleMoveIndicators.get(str).setVisible(true);
+                possibleMoveIndicators.get(str).toFront();
             }
         });
 
@@ -298,8 +303,6 @@ public class ChessApplication extends Application {
             }
             int[] position = coordinatesToPosition((int) (event.getSceneX() - mouseX), (int) (event.getSceneY() - mouseY));
             ArrayList<Pioni> res = proxy.requestMove(p,position);
-            System.out.println("RES");
-            System.out.println(res);
             if (res == null) {
                 resetToOriginalPosition(p, piece);
                 return;
@@ -311,6 +314,30 @@ public class ChessApplication extends Application {
                 pieceImage.setLayoutX(newCoordinates[0] - piece.getFitWidth() / 2);
                 pieceImage.setLayoutY(newCoordinates[1] - piece.getFitHeight() / 2);
             }
+            if (p.getType().equals("Stratiotis") && ((p.getIsWhite() && p.getYPos() == 4) || (!p.getIsWhite() && p.getYPos() == 1))) {
+                selectUpgrade(p.getIsWhite()).thenAccept(str->{
+                   Message msg = new Message();
+                   msg.setCode(RequestCodes.REQUEST_UPGRADE);
+                   int[] selection = new int[3];
+                   selection[0] = p.getPosition()[0];
+                   selection[1] = p.getPosition()[1];
+                    switch (str) {
+                        case "Alogo" -> selection[2] = 0;
+                        case "Pyrgos" -> selection[2] = 1;
+                        case "Stratigos" -> selection[2] = 2;
+                        case "Vasilissa" -> selection[2] = 3;
+                    }
+                   msg.setData(selection);
+                   msg.send(webSocket);
+                   msg.onReply(reply-> {
+                       Platform.runLater(()->{
+                           root.getChildren().remove(pieces.get(p));
+                           pieces.remove(p);
+                       });
+                       chessEngine.refreshBoard(()->updateAfterEnemyMove(false));
+                   });
+                });
+            }
             switchTurnAnimation();
             playPiecePlacementSound();
             if (chessEngine.getBoard().getGameEnded()) showWinScreen();
@@ -319,7 +346,7 @@ public class ChessApplication extends Application {
         });
         switchTurnAnimation();
         pieces.put(p, piece);
-        root.getChildren().add(piece);
+        Platform.runLater(()->root.getChildren().add(piece));
     }
 
     private void updateCapturedPieces() {
@@ -433,7 +460,7 @@ public class ChessApplication extends Application {
     }
 
 
-    private CompletableFuture<String> selectUpgrade(boolean white) {
+    public CompletableFuture<String> selectUpgrade(boolean white) {
         CompletableFuture<String> selection = new CompletableFuture<>();
 
         Label promptLabel = new Label("Select an Option:");
@@ -480,7 +507,6 @@ public class ChessApplication extends Application {
         });
 
         root.getChildren().add(centerBox);
-
         Platform.runLater(() -> {
             centerBox.setLayoutX((root.getWidth() - centerBox.getWidth()) / 2);
             centerBox.setLayoutY((root.getHeight() - centerBox.getHeight()) / 2);
@@ -518,8 +544,23 @@ public class ChessApplication extends Application {
             blackTimerRunning = false;
         }
     }
-    public void updateAfterEnemyMove() {
-        for (Pioni p : chessEngine.getBoard().getPionia()) {
+    public void updateAfterEnemyMove(boolean shouldSwitch) {
+        ArrayList<Pioni> currentPionia = chessEngine.getBoard().getPionia();
+        ArrayList<Pioni> toRemove = new ArrayList<>();
+        for (Pioni p : pieces.keySet()) {
+            if (!currentPionia.contains(p)) {
+                toRemove.add(p);
+            }
+        }
+        for (Pioni p : toRemove) {
+            ImageView pieceImage = pieces.get(p);
+            if (pieceImage != null) {
+                Platform.runLater(()->root.getChildren().remove(pieceImage));
+            }
+            pieces.remove(p);
+        }
+
+        for (Pioni p :currentPionia) {
             ImageView piece = pieces.get(p);
             if (piece == null) {
                 addPiece(root, p);
@@ -530,11 +571,17 @@ public class ChessApplication extends Application {
                 piece.setVisible(!p.getCaptured());
             }
         }
-        switchTurnAnimation();
-        toggleTimer();
+
+        if (shouldSwitch) {
+            switchTurnAnimation();
+            toggleTimer();
+            playPiecePlacementSound();
+        }
         updateCapturedPieces();
-        playPiecePlacementSound();
-        if (chessEngine.getBoard().getGameEnded()) showWinScreen();
+
+        if (chessEngine.getBoard().getGameEnded()) {
+            showWinScreen();
+        }
     }
     public static void main(String[] args) {
         launch();
@@ -582,6 +629,14 @@ public class ChessApplication extends Application {
         this.offlineMode = offlineMode;
     }
     public void setWebSocket(WebSocket socket){ this.webSocket = socket; }
+
+    @Override
+    public void onMessageReceived(Message message) {
+        if (message.getCode() == RequestCodes.ENEMY_MOVE) {
+            chessEngine.refreshBoard(()->updateAfterEnemyMove(Boolean.parseBoolean(message.getData())));
+        }
+    }
+
 
 //    private void loadingScreen() {
 //        String videoPath = getClass().getResource("/startingScreen.mp4").toExternalForm();

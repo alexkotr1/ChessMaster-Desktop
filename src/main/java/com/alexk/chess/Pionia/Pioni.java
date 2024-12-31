@@ -42,7 +42,7 @@ public abstract class Pioni implements Serializable {
         this.type = this.getClass().getSimpleName();
         this.isWhite = isWhite;
         this.chessBoard = chessBoard;
-        if (captured != null) this.captured = captured;
+        this.captured = captured;
         switch (this.type){
             case "Alogo":
                 this.imagePath = this.isWhite ? "white knight.png" : "black knight.png";
@@ -130,7 +130,7 @@ public abstract class Pioni implements Serializable {
         this.isWhite = isWhite;
     }
     public boolean getIsWhite(){
-        return isWhite;
+        return this.isWhite;
     }
 
     public int[] getPosition(){
@@ -188,8 +188,6 @@ public abstract class Pioni implements Serializable {
             Pioni cloned = this.getClass()
                     .getConstructor(Boolean.class, ChessBoard.class, char.class, int.class, String.class, Boolean.class)
                     .newInstance(this.isWhite, null, Utilities.int2Char(this.position[0]), this.position[1], this.getID(), this.captured);
-            cloned.setCaptured(this.getCaptured());
-            cloned.setImagePath(this.getImagePath());
             return cloned;
         } catch (Exception e) {
             throw new AssertionError("Clone operation failed", e);
@@ -200,12 +198,12 @@ public abstract class Pioni implements Serializable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Pioni p = (Pioni) o;
-        return type.equals(p.type) && getIsWhite() == p.getIsWhite();
+        Pioni pioni = (Pioni) o;
+        return Objects.equals(id, pioni.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, type, isWhite);
+        return Objects.hash(id);
     }
 }

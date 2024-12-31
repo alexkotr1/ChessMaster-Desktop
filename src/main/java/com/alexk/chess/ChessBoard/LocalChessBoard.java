@@ -46,7 +46,7 @@ public class LocalChessBoard extends ChessBoard {
                         break;
                     }
                     case 3:{
-                        pionia.add(new Vasilissa(x == 0,this,'D',x == 0 ? 1 : 8,null,false));
+                        pionia.add(new Vasilissa(x == 0,this,'D',x == 0 ? 3 : 8,null,false));
                         pionia.add(new Vasilias(x == 0,this,'E',x == 0 ? 1 : 8,null,false));
                         break;
                     }
@@ -66,8 +66,10 @@ public class LocalChessBoard extends ChessBoard {
     public void move(char xOrig, int yOrig, char xDest,int yDest){
         movesRemaining--;
         Pioni p = getPioniAt(xOrig,yOrig);
+        Pioni pDest = getPioniAt(xDest,yDest);
         if (p.getType().equals("Stratiotis")) movesRemaining = 100;
         placePioniAt(p,xDest,yDest);
+        if (pDest != null) capture(pDest);
         if (p.getType().equals("Pyrgos")) ((Pyrgos) p).setMoved(true);
         else if (p.getType().equals("Vasilias")) ((Vasilias) p).setMoved(true);
     }

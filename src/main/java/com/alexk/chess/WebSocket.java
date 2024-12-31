@@ -10,7 +10,7 @@ import java.net.URI;
 public class WebSocket {
 
     private Session session;
-    private final WebSocketMessageListener listener;
+    private WebSocketMessageListener listener;
 
     public WebSocket(WebSocketMessageListener listener) {
         this.listener = listener;
@@ -22,6 +22,8 @@ public class WebSocket {
         }
     }
 
+    public void setListener(WebSocketMessageListener listener) { this.listener = listener; }
+
     @OnOpen
     public void onOpen(Session session) {
         System.out.println("Connected to server.");
@@ -29,12 +31,12 @@ public class WebSocket {
 
     @OnMessage
     public void onMessage(String message) throws JsonProcessingException {
-        //System.out.println("Received raw message: " + message);
+        System.out.println("Received message" + message);
         Message res = Message.mapper.readValue(message, Message.class);
+        System.out.println("Parsed message: " + res);
         if (listener != null) {
             listener.onMessageReceived(res);
         }
-        //System.out.println(Message.pending.containsKey(res.getMessageID()) ? "Found response" : "No response");
         if (Message.pending.containsKey(res.getMessageID())) {
             Message reply = Message.pending.get(res.getMessageID());
             reply.triggerReplyCallback(res);
