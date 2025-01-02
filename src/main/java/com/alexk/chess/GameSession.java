@@ -1,7 +1,5 @@
 package com.alexk.chess;
 
-import jakarta.websocket.Session;
-
 public class GameSession {
     public enum GameState {
         WAITING_FOR_HOST_CODE,

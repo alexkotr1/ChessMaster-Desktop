@@ -113,12 +113,14 @@ public class Main extends Application implements WebSocketMessageListener {
                     }
                     Platform.runLater(() -> {
                         try {
+                            int time = Message.mapper.readValue(res.getData(),int.class);
                             chessApp = new ChessApplication();
                             chessApp.setMode(false, false);
                             chessApp.setWebSocket(webSocket);
-                            chessApp.setMinutesAllowed(Message.mapper.readValue(res.getData(),int.class));
+                            chessApp.setMinutesAllowed(time);
                             chessApp.start(primaryStage);
                             dialogStage.close();
+
                         }catch(JsonProcessingException err){
                             System.err.println(err.getMessage());
                         }
@@ -169,7 +171,7 @@ public class Main extends Application implements WebSocketMessageListener {
                 chessApp = new ChessApplication();
                 chessApp.setMode(false, true);
                 chessApp.setWebSocket(webSocket);
-                chessApp.setMinutesAllowed(timerMinutes); // Pass the timer value
+                chessApp.setMinutesAllowed(timerMinutes);
                 chessApp.start(primaryStage);
                 dialogStage.close();
             });

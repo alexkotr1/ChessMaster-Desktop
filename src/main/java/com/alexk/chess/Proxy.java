@@ -8,7 +8,6 @@ import com.alexk.chess.Pionia.Pioni;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
 
 public class Proxy{
     ChessEngine chessEngine;

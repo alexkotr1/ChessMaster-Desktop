@@ -8,7 +8,6 @@ import com.alexk.chess.Utilities;
 import com.alexk.chess.WebSocket;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JavaType;
-import org.glassfish.grizzly.http.server.Request;
 
 import java.util.ArrayList;
 import java.util.HashMap;

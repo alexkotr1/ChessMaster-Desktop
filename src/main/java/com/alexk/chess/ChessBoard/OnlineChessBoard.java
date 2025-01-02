@@ -1,7 +1,7 @@
 package com.alexk.chess.ChessBoard;
 
 import com.alexk.chess.ChessEngine.ChessEngine;
-import com.alexk.chess.Pionia.*;
+import com.alexk.chess.Pionia.Pioni;
 import com.alexk.chess.Utilities;
 
 import java.util.ArrayList;

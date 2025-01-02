@@ -24,18 +24,14 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 import javafx.util.Duration;
-import javafx.scene.image.WritableImage;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
+
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
 import javax.sound.sampled.LineEvent;
 import java.io.BufferedInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -53,9 +49,9 @@ public class ChessApplication extends Application implements WebSocketMessageLis
     private final int offBoundsEnd = 40;
     private VBox whiteCapturedPawns;
     private VBox blackCapturedPawns;
-    private int secondsAllowed = 600;
-    private int whiteRemainingTime = secondsAllowed; // in seconds
-    private int blackRemainingTime = secondsAllowed; // in seconds
+    private int secondsAllowed;
+    private int whiteRemainingTime;
+    private int blackRemainingTime;
     private boolean whiteTimerRunning = true;
     private boolean blackTimerRunning = false;
     private Label winnerLabel;
@@ -69,7 +65,9 @@ public class ChessApplication extends Application implements WebSocketMessageLis
     private ImageView previousMove;
     private boolean blackMode = false;
     private final int[] kingChecked = new int[]{0,0};
-    public ChessApplication() {}
+    public ChessApplication() {
+
+    }
 
 
     @Override
@@ -227,7 +225,6 @@ public class ChessApplication extends Application implements WebSocketMessageLis
                         }
                     }
 
-                    // Update timer labels
                     Platform.runLater(() -> {
                         updateTimerLabel(whiteTimerLabel, whiteRemainingTime);
                         updateTimerLabel(blackTimerLabel, blackRemainingTime);
@@ -238,7 +235,6 @@ public class ChessApplication extends Application implements WebSocketMessageLis
 
         gameTimer.start();
 
-        gameTimer.start();
         rightPanel.getChildren().addAll(whiteCapturedPawns, blackCapturedPawns, whiteTimerLabel, blackTimerLabel, winnerLabel);
 
         root.getChildren().addAll(background, rightPanel);
@@ -681,11 +677,13 @@ public class ChessApplication extends Application implements WebSocketMessageLis
         this.offlineMode = offlineMode;
         this.blackMode = !whiteMode;
     }
-    public void setMinutesAllowed(int minutesAllowed){
-        secondsAllowed = minutesAllowed * 60;
-    }
-    public void setWebSocket(WebSocket socket){ this.webSocket = socket; }
 
+    public void setWebSocket(WebSocket socket){ this.webSocket = socket; }
+    public void setMinutesAllowed(int mins){
+        secondsAllowed = mins * 60;
+        whiteRemainingTime = secondsAllowed;
+        blackRemainingTime = secondsAllowed;
+    }
     private void updateTimerLabel(Label label, int remainingTime) {
         int minutes = remainingTime / 60;
         int seconds = remainingTime % 60;
