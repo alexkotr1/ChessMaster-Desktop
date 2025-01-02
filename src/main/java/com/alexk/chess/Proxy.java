@@ -12,10 +12,8 @@ import java.util.Map;
 
 public class Proxy{
     ChessEngine chessEngine;
-    private final boolean offlineMode;
     private final ArrayList<int[]> allPositions = new ArrayList<>();
     public Proxy(boolean offlineMode, WebSocket socket){
-        this.offlineMode = offlineMode;
         if (offlineMode) chessEngine = new LocalChessEngine();
         else chessEngine = new OnlineChessEngine(socket);
         chessEngine.playChess();
@@ -25,16 +23,10 @@ public class Proxy{
             }
         }
     }
-    public boolean isOfflineMode() {
-        return offlineMode;
-    }
-    public void setOfflineMode(boolean offlineMode) {}
-
     public ArrayList<int[]> onPawnDrag(Pioni p){
         ArrayList<int[]> possibleMoveIndicators = new ArrayList<>();
         if (chessEngine.getBoard().getWhiteTurn() != p.getIsWhite() || chessEngine.getBoard().getGameEnded()) return null;
         HashMap<Pioni, ArrayList<int[]>> legalMovesWhenKingThreatened = chessEngine.kingCheckMate(p.getIsWhite());
-        printLegalMoves(legalMovesWhenKingThreatened);
         if (legalMovesWhenKingThreatened != null && !legalMovesWhenKingThreatened.isEmpty()) {
             if (legalMovesWhenKingThreatened.get(p) == null) return null;
             for (int[] dest : legalMovesWhenKingThreatened.get(p)) {
@@ -54,29 +46,5 @@ public class Proxy{
     public ArrayList<Pioni> requestMove(Pioni p, int[] position) {
         return chessEngine.nextMove(p.getXPos(), p.getYPos(), Utilities.int2Char(position[0]), position[1]);
     }
-    public void printLegalMoves(HashMap<Pioni, ArrayList<int[]>> legalMoves) {
-        if (legalMoves == null || legalMoves.isEmpty()) {
-            System.out.println("No legal moves available.");
-            return;
-        }
 
-        System.out.println("Legal Moves:");
-
-        for (Map.Entry<Pioni, ArrayList<int[]>> entry : legalMoves.entrySet()) {
-            Pioni piece = entry.getKey();
-            ArrayList<int[]> moves = entry.getValue();
-
-            System.out.println("Piece: " + piece + " at [" + piece.getXPos() + "," + piece.getYPos() + "]");
-            System.out.println("Possible Moves:");
-
-            if (moves == null || moves.isEmpty()) {
-                System.out.println("  No moves available for this piece.");
-            } else {
-                for (int[] move : moves) {
-                    System.out.println("  -> [" + Utilities.int2Char(move[0]) + "," + move[1] + "]");
-                }
-            }
-            System.out.println();
-        }
-    }
 }

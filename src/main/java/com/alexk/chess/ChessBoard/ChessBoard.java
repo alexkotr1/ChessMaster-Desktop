@@ -21,4 +21,10 @@ public abstract class ChessBoard {
     public abstract void setGameEndedWinner(Boolean gameEnded, ChessEngine.Winner winner);
     public abstract Boolean getGameEnded();
     public abstract ChessEngine.Winner getWinner();
+    public int[] translateToBlackView(int x, int y){
+        return new int[]{Math.abs(x - 9),Math.abs(y - 9)};
+    }
+    public int[] translateToWhiteView(int x, int y){
+        return new int[]{x + Math.abs(x - 9),y + Math.abs(y - 9)};
+    }
 }

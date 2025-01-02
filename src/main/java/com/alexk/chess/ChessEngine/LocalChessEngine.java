@@ -25,23 +25,18 @@ public class LocalChessEngine extends ChessEngine {
         System.out.println(chessBoard.getPionia().size());
     }
     public ArrayList<Pioni> nextMove(char xOrig, int yOrig, char xDest, int yDest) {
-        System.out.println("Attempting to move piece from [" + xOrig + "," + yOrig + "] to [" + xDest + "," + yDest + "].");
 
         Pioni p = chessBoard.getPioniAt(xOrig, yOrig);
         if (p == null) {
-            System.out.println("No piece found at the origin position.");
             return null;
         }
         if (p.getIsWhite() != chessBoard.getWhiteTurn()) {
-            System.out.println("It's not " + (p.getIsWhite() ? "white" : "black") + "'s turn.");
             return null;
         }
         if (!p.isLegalMove(xDest, yDest)) {
-            System.out.println("Move is not legal for the selected piece.");
             return null;
         }
         if (getBoard().getGameEnded()) {
-            System.out.println("The game has already ended.");
             return null;
         }
 
@@ -53,7 +48,6 @@ public class LocalChessEngine extends ChessEngine {
         if (legalMovesWhenKingThreatened != null && !legalMovesWhenKingThreatened.isEmpty()) {
             ArrayList<int[]> desiredMoves = legalMovesWhenKingThreatened.get(p);
             if (desiredMoves != null && desiredMoves.stream().noneMatch(arr -> arr[0] == Utilities.char2Int(xDest) && arr[1] == yDest)) {
-                System.out.println("Move is not allowed because the king is in check.");
                 return null;
             } else {
                 legalMovesWhenKingThreatened.clear();
@@ -61,12 +55,10 @@ public class LocalChessEngine extends ChessEngine {
         }
 
         if (checkDumbMove(p, new int[]{Utilities.char2Int(xDest), yDest})) {
-            System.out.println("Move exposes the king to a threat.");
             return null;
         }
 
         if (p.getType().equals("Vasilias") && pioniAtDest != null && pioniAtDest.getType().equals("Pyrgos") && p.getIsWhite() == pioniAtDest.getIsWhite()) {
-            System.out.println("Performing castling.");
             moved.add(pioniAtDest);
             int[] dest = pioniAtDest.getPosition();
             int[] orig = p.getPosition();
@@ -78,26 +70,21 @@ public class LocalChessEngine extends ChessEngine {
 
         chessBoard.move(xOrig, yOrig, xDest, yDest);
         if (pioniAtDest != null && p.getIsWhite() != pioniAtDest.getIsWhite()) {
-            System.out.println("Capturing piece at destination.");
             chessBoard.capture(pioniAtDest);
             chessBoard.setMovesRemaining(100);
             moved.add(pioniAtDest);
         }
 
         if (checkKingMat(chessBoard, !p.getIsWhite())) {
-            System.out.println("Checking for checkmate.");
             HashMap<Pioni, ArrayList<int[]>> legalMovesWhenEnemyKingThreatened = kingCheckMate(!p.getIsWhite());
             if (legalMovesWhenEnemyKingThreatened == null || legalMovesWhenEnemyKingThreatened.isEmpty()) {
-                System.out.println("Checkmate! " + (p.getIsWhite() ? "White" : "Black") + " wins.");
                 getBoard().setGameEndedWinner(true, p.getIsWhite() ? Winner.White : Winner.Black);
             }
         } else if (stalemateCheck(!p.getIsWhite()) || chessBoard.getMovesRemaining() == 0) {
-            System.out.println("Stalemate or 50-move rule reached. Game is a draw.");
             getBoard().setGameEndedWinner(true, Winner.Draw);
         }
 
         chessBoard.setWhiteTurn(!chessBoard.getWhiteTurn());
-        System.out.println("Move successful. Turn switched.");
         return moved;
     }
 
@@ -118,7 +105,6 @@ public class LocalChessEngine extends ChessEngine {
                     upgradedPioni = new Vasilissa(p.getIsWhite(), chessBoard, p.getXPos(), p.getYPos(),null, false);
                     break;
                 default:
-                    System.err.println("Something went wrong!");
                     return null;
             }
             chessBoard.getPionia().remove(p);
@@ -129,7 +115,6 @@ public class LocalChessEngine extends ChessEngine {
     }
 
     public static boolean checkKingMat(ChessBoard chessBoard, boolean white) {
-        System.out.println("Checking if the king is in check for " + (white ? "white" : "black") + ".");
         Pioni allyKing = chessBoard.getPionia()
                 .stream()
                 .filter(p -> p.getIsWhite() == white && p.getType().equals("Vasilias"))
@@ -137,17 +122,14 @@ public class LocalChessEngine extends ChessEngine {
                 .orElse(null);
 
         if (allyKing == null) {
-            System.err.println("King not found on the board.");
             return false;
         }
 
         for (Pioni p : chessBoard.getPionia().stream().filter(pioni -> !pioni.getCaptured()).collect(Collectors.toCollection(ArrayList::new))) {
             if (p.getIsWhite() != white && p.isLegalMove(allyKing.getXPos(), allyKing.getYPos())) {
-                System.out.println("Threat detected from piece: " + p + ".");
                 return true;
             }
         }
-        System.out.println("No threats detected for the king.");
         return false;
     }
     public HashMap<Pioni,ArrayList<int[]>> kingCheckMate(boolean white) {

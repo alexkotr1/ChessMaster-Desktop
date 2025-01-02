@@ -9,7 +9,7 @@ import java.net.URI;
 @ClientEndpoint
 public class WebSocket {
 
-    private Session session;
+    private static Session session;
     private WebSocketMessageListener listener;
 
     public WebSocket(WebSocketMessageListener listener) {
@@ -31,9 +31,7 @@ public class WebSocket {
 
     @OnMessage
     public void onMessage(String message) throws JsonProcessingException {
-        System.out.println("Received message" + message);
         Message res = Message.mapper.readValue(message, Message.class);
-        System.out.println("Parsed message: " + res);
         if (listener != null) {
             listener.onMessageReceived(res);
         }
@@ -54,6 +52,13 @@ public class WebSocket {
             session.getBasicRemote().sendText(message);
         } catch (IOException e) {
             System.err.println("Error sending message: " + e.getMessage());
+        }
+    }
+    public static void closeConnection(){
+        try {
+            session.close();
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
         }
     }
 }

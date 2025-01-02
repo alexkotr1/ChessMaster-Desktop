@@ -2,11 +2,14 @@ package com.alexk.chess;
 
 import com.alexk.chess.ChessEngine.ChessEngine;
 import com.alexk.chess.Pionia.Pioni;
-import com.alexk.chess.Pionia.Stratiotis;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import javafx.animation.AnimationTimer;
+import javafx.animation.TranslateTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.geometry.Pos;
+import javafx.scene.CacheHint;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -20,18 +23,21 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
-
+import javafx.util.Duration;
+import javafx.scene.image.WritableImage;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
 import javax.sound.sampled.LineEvent;
-import javafx.concurrent.Task;
 import java.io.BufferedInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 
@@ -42,19 +48,16 @@ public class ChessApplication extends Application implements WebSocketMessageLis
     private final DropShadow whiteTurnEffect = new DropShadow();
     private final DropShadow blackTurnEffect = new DropShadow();
     private final HashMap<String, ImageView> possibleMoveIndicators = new HashMap<>();
-    private final ArrayList<int[]> allPositions = new ArrayList<>();
     private AnchorPane root;
     private final int tile = 90;
     private final int offBoundsEnd = 40;
     private VBox whiteCapturedPawns;
     private VBox blackCapturedPawns;
-    private boolean whiteTimerRunning = false;
-    private long whiteTimerStartTime;
-    private long whitePauseTime = 0;
+    private int secondsAllowed = 600;
+    private int whiteRemainingTime = secondsAllowed; // in seconds
+    private int blackRemainingTime = secondsAllowed; // in seconds
+    private boolean whiteTimerRunning = true;
     private boolean blackTimerRunning = false;
-    private long blackTimerStartTime = 0;
-    private long blackPauseTime = 0;
-    private final int minutesAllowed = 600;
     private Label winnerLabel;
     private Button playAgain;
     private AnchorPane rightPanel;
@@ -63,9 +66,10 @@ public class ChessApplication extends Application implements WebSocketMessageLis
     public ChessEngine chessEngine;
     private boolean offlineMode;
     private WebSocket webSocket;
-
-    public ChessApplication() {
-    }
+    private ImageView previousMove;
+    private boolean blackMode = false;
+    private final int[] kingChecked = new int[]{0,0};
+    public ChessApplication() {}
 
 
     @Override
@@ -103,10 +107,9 @@ public class ChessApplication extends Application implements WebSocketMessageLis
         rightPanel.setStyle("-fx-background-color: linear-gradient(to bottom, #F0D09F, #3F2C0E);");
 
         whiteCapturedPawns = new VBox(10);
-        whiteCapturedPawns.setPrefHeight(220);
+        whiteCapturedPawns.setPrefHeight(240);
         whiteCapturedPawns.setPrefWidth(170);
         whiteCapturedPawns.setLayoutX(15);
-        whiteCapturedPawns.setLayoutY(30);
         whiteCapturedPawns.setStyle(
                 "-fx-border-color: black;" +
                         "-fx-border-insets: 5;" +
@@ -129,7 +132,6 @@ public class ChessApplication extends Application implements WebSocketMessageLis
         blackCapturedPawns.setPrefHeight(240);
         blackCapturedPawns.setPrefWidth(170);
         blackCapturedPawns.setLayoutX(15);
-        blackCapturedPawns.setLayoutY(rightPanel.getPrefHeight() - blackCapturedPawns.getPrefHeight() - 30);
         blackCapturedPawns.setStyle(
                 "-fx-border-color: white;" +
                         "-fx-border-insets: 5;" +
@@ -155,50 +157,27 @@ public class ChessApplication extends Application implements WebSocketMessageLis
         playAgain.setVisible(false);
         playAgain.setOnAction(event -> {
             whiteTimerRunning = false;
-            whiteTimerStartTime = 0;
-            whitePauseTime = 0;
             blackTimerRunning = false;
-            blackTimerStartTime = 0;
-            blackPauseTime = 0;
             initialize();
         });
 
 
-        Label whiteTimerlabel = new Label();
-        whiteTimerlabel.setText("White Time:");
-        whiteTimerlabel.setFont(Font.font("Arial", FontWeight.BOLD, 20));
-        whiteTimerlabel.setTextFill(Color.web("#F0D09F")); // Match chessboard's color scheme
-        whiteTimerlabel.setStyle("-fx-background-color: #3F2C0E; " +
+        Label whiteTimerLabel = new Label();
+        whiteTimerLabel.setText(String.format("%d:%02d",secondsAllowed / 60,secondsAllowed % 60));
+        whiteTimerLabel.setFont(Font.font("Arial", FontWeight.BOLD, 20));
+        whiteTimerLabel.setTextFill(Color.web("#F0D09F"));
+        whiteTimerLabel.setStyle("-fx-background-color: #3F2C0E; " +
                 "-fx-padding: 10; " +
                 "-fx-border-radius: 10; " +
                 "-fx-background-radius: 10; " +
                 "-fx-border-width: 2; " +
                 "-fx-border-color: #F0D09F;");
-        whiteTimerlabel.setLayoutX(50);
-        whiteTimerlabel.setLayoutY(blackCapturedPawns.getLayoutY() - 50);
-
-
-        AnimationTimer whiteTimer = new AnimationTimer() {
-            @Override
-            public void handle(long now) {
-                if (whiteTimerRunning) {
-                    long elapsedTime = (now - whiteTimerStartTime + whitePauseTime) / 1_000_000_000;
-                    long remainingTime = minutesAllowed - elapsedTime;
-                    if (remainingTime <= 0) {
-                        chessEngine.getBoard().setGameEndedWinner(true, ChessEngine.Winner.Black);
-                        showWinScreen();
-                    }
-                    long minutes = remainingTime / 60;
-                    long seconds = remainingTime % 60;
-                    whiteTimerlabel.setText(String.format("%02d:%02d", minutes, seconds));
-                }
-            }
-        };
+        whiteTimerLabel.setLayoutX(50);
 
         Label blackTimerLabel = new Label();
-        blackTimerLabel.setText("10:00");
+        blackTimerLabel.setText(String.format("%d:%02d",secondsAllowed / 60,secondsAllowed % 60));
         blackTimerLabel.setFont(Font.font("Arial", FontWeight.BOLD, 20));
-        blackTimerLabel.setTextFill(Color.web("#F0D09F")); // Match chessboard's color scheme
+        blackTimerLabel.setTextFill(Color.web("#F0D09F"));
         blackTimerLabel.setStyle("-fx-background-color: #3F2C0E; " +
                 "-fx-padding: 10; " +
                 "-fx-border-radius: 10; " +
@@ -206,26 +185,61 @@ public class ChessApplication extends Application implements WebSocketMessageLis
                 "-fx-border-width: 2; " +
                 "-fx-border-color: #F0D09F;");
         blackTimerLabel.setLayoutX(50);
-        blackTimerLabel.setLayoutY(whiteCapturedPawns.getLayoutY() + whiteCapturedPawns.getPrefHeight() + 10);
 
-        AnimationTimer blackTimer = new AnimationTimer() {
+        if (blackMode){
+            whiteCapturedPawns.setLayoutY(rightPanel.getPrefHeight() - blackCapturedPawns.getPrefHeight() - 30);
+            blackCapturedPawns.setLayoutY(30);
+            whiteTimerLabel.setLayoutY(blackCapturedPawns.getLayoutY() + blackCapturedPawns.getPrefHeight() + 10);
+            blackTimerLabel.setLayoutY(whiteCapturedPawns.getLayoutY() - 50);
+        } else {
+            whiteCapturedPawns.setLayoutY(30);
+            blackCapturedPawns.setLayoutY(rightPanel.getPrefHeight() - blackCapturedPawns.getPrefHeight() - 30);
+            whiteTimerLabel.setLayoutY(blackCapturedPawns.getLayoutY() - 50);
+            blackTimerLabel.setLayoutY(whiteCapturedPawns.getLayoutY() + whiteCapturedPawns.getPrefHeight() + 10);
+        }
+        AnimationTimer gameTimer = new AnimationTimer() {
+            private long lastUpdate = 0;
+
             @Override
             public void handle(long now) {
-                if (blackTimerRunning) {
-                    long elapsedTime = (now - blackTimerStartTime + blackPauseTime) / 1_000_000_000;
-                    long remainingTime = minutesAllowed - elapsedTime;
-                    if (remainingTime <= 0) {
-                        chessEngine.getBoard().setGameEndedWinner(true, ChessEngine.Winner.White);
-                        showWinScreen();
+                if (lastUpdate == 0) {
+                    lastUpdate = now;
+                    return;
+                }
+
+                long elapsedNanos = now - lastUpdate;
+                int elapsedSeconds = (int) (elapsedNanos / 1_000_000_000);
+
+                if (elapsedSeconds > 0) {
+                    lastUpdate = now;
+
+                    if (whiteTimerRunning) {
+                        whiteRemainingTime -= elapsedSeconds;
+                        if (whiteRemainingTime <= 0) {
+                            stop();
+                            return;
+                        }
+                    } else if (blackTimerRunning) {
+                        blackRemainingTime -= elapsedSeconds;
+                        if (blackRemainingTime <= 0) {
+                            stop();
+                            return;
+                        }
                     }
-                    long minutes = remainingTime / 60;
-                    long seconds = remainingTime % 60;
-                    blackTimerLabel.setText(String.format("%02d:%02d", minutes, seconds));
+
+                    // Update timer labels
+                    Platform.runLater(() -> {
+                        updateTimerLabel(whiteTimerLabel, whiteRemainingTime);
+                        updateTimerLabel(blackTimerLabel, blackRemainingTime);
+                    });
                 }
             }
         };
-        blackTimer.start();
-        rightPanel.getChildren().addAll(whiteCapturedPawns, blackCapturedPawns, whiteTimerlabel, blackTimerLabel, winnerLabel);
+
+        gameTimer.start();
+
+        gameTimer.start();
+        rightPanel.getChildren().addAll(whiteCapturedPawns, blackCapturedPawns, whiteTimerLabel, blackTimerLabel, winnerLabel);
 
         root.getChildren().addAll(background, rightPanel);
 
@@ -242,7 +256,6 @@ public class ChessApplication extends Application implements WebSocketMessageLis
 
         for (int x = 1; x <= 8; x++) {
             for (int y = 1; y <= 8; y++) {
-                allPositions.add(new int[]{x, y});
                 ImageView indicator = new ImageView(new Image("marker.png"));
                 int[] coordinates = getCoordinates(Utilities.int2Char(x), y);
                 indicator.setFitWidth(10);
@@ -255,12 +268,6 @@ public class ChessApplication extends Application implements WebSocketMessageLis
                 possibleMoveIndicators.put(String.valueOf(Utilities.int2Char(x)) + y, indicator);
             }
         }
-        whiteTimerStartTime = System.nanoTime();
-        whiteTimerRunning = true;
-        whiteTimer.start();
-        blackTimerStartTime = System.nanoTime();
-        blackTimerRunning = false;
-        blackTimer.start();
     }
 
     private void addPiece(AnchorPane root, Pioni p) {
@@ -277,6 +284,7 @@ public class ChessApplication extends Application implements WebSocketMessageLis
         });
 
         piece.setOnDragDetected(c -> {
+            if (chessEngine.getBoard().getWhiteTurn() == blackMode) return;
             ArrayList<int[]> moveIndicators = proxy.onPawnDrag(p);
             if (moveIndicators == null) return;
             for (int[] moveIndicator : moveIndicators) {
@@ -287,7 +295,7 @@ public class ChessApplication extends Application implements WebSocketMessageLis
         });
 
         piece.setOnMouseDragged(event -> {
-            if (chessEngine.getBoard().getWhiteTurn() != p.getIsWhite() || chessEngine.getBoard().getGameEnded()){
+            if (chessEngine.getBoard().getWhiteTurn() == blackMode || chessEngine.getBoard().getWhiteTurn() != p.getIsWhite() || chessEngine.getBoard().getGameEnded()){
                 resetToOriginalPosition(p, piece);
                 return;
             }
@@ -297,7 +305,7 @@ public class ChessApplication extends Application implements WebSocketMessageLis
         });
 
         piece.setOnMouseReleased(event -> {
-            if (chessEngine.getBoard().getWhiteTurn() != p.getIsWhite() || chessEngine.getBoard().getGameEnded()) return;
+            if (chessEngine.getBoard().getWhiteTurn() == blackMode || chessEngine.getBoard().getWhiteTurn() != p.getIsWhite() || chessEngine.getBoard().getGameEnded()) return;
             for (ImageView indicator : possibleMoveIndicators.values()) {
                 indicator.setVisible(false);
             }
@@ -322,7 +330,6 @@ public class ChessApplication extends Application implements WebSocketMessageLis
                    selection[0] = p.getPosition()[0];
                    selection[1] = p.getPosition()[1];
                     switch (str) {
-                        case "Alogo" -> selection[2] = 0;
                         case "Pyrgos" -> selection[2] = 1;
                         case "Stratigos" -> selection[2] = 2;
                         case "Vasilissa" -> selection[2] = 3;
@@ -338,6 +345,7 @@ public class ChessApplication extends Application implements WebSocketMessageLis
                    });
                 });
             }
+            Platform.runLater(()->root.getChildren().remove(previousMove));
             switchTurnAnimation();
             playPiecePlacementSound();
             if (chessEngine.getBoard().getGameEnded()) showWinScreen();
@@ -347,6 +355,18 @@ public class ChessApplication extends Application implements WebSocketMessageLis
         switchTurnAnimation();
         pieces.put(p, piece);
         Platform.runLater(()->root.getChildren().add(piece));
+    }
+    public static void delay(long millis, Runnable continuation) {
+        Task<Void> sleeper = new Task<Void>() {
+            @Override
+            protected Void call() throws Exception {
+                try { Thread.sleep(millis); }
+                catch (InterruptedException e) { }
+                return null;
+            }
+        };
+        sleeper.setOnSucceeded(event -> continuation.run());
+        new Thread(sleeper).start();
     }
 
     private void updateCapturedPieces() {
@@ -376,7 +396,6 @@ public class ChessApplication extends Application implements WebSocketMessageLis
 
             HBox hbox;
             if (x % 4 < targetBox.getChildren().size()) {
-
                 hbox = (HBox) targetBox.getChildren().get(x % 4);
                 Platform.runLater(()->hbox.getChildren().clear());
             } else {
@@ -396,18 +415,21 @@ public class ChessApplication extends Application implements WebSocketMessageLis
     }
 
 
-
     private void resetToOriginalPosition(Pioni p, ImageView piece) {
         int[] orig = getCoordinates(p.getXPos(), p.getYPos());
         piece.setLayoutX(orig[0] - piece.getFitWidth() / 2);
         piece.setLayoutY(orig[1] - piece.getFitHeight() / 2);
-        piece.setEffect(p.getIsWhite() ? whiteTurnEffect : blackTurnEffect);
+        piece.setEffect(p.getIsWhite() ? (blackMode ? null : whiteTurnEffect) : blackMode ? blackTurnEffect : null);
+        if (p.getType().equals("Vasilias")){
+            setKingCheckEffect(p.getIsWhite(), (p.getIsWhite() ? kingChecked[0] : kingChecked[1]) == 1);
+        }
     }
 
     private int[] getCoordinates(char x, int y) {
+        int[] pos = blackMode ? chessEngine.getBoard().translateToBlackView(Utilities.char2Int(x),y) : new int[]{Utilities.char2Int(x),y};
         int[] coordinates = new int[2];
-        coordinates[0] = offBoundsEnd + Math.abs(Utilities.char2Int(x) - 1) * tile + tile / 2;
-        coordinates[1] = offBoundsEnd + Math.abs(y - 8) * tile + tile / 2;
+        coordinates[0] = offBoundsEnd + Math.abs(pos[0] - 1) * tile + tile / 2;
+        coordinates[1] = offBoundsEnd + Math.abs(pos[1] - 8) * tile + tile / 2;
         return coordinates;
     }
 
@@ -415,7 +437,7 @@ public class ChessApplication extends Application implements WebSocketMessageLis
         int[] position = new int[2];
         position[0] = Math.abs(x - offBoundsEnd) / tile + 1;
         position[1] = Math.abs(y - tile * 8) / tile + 1;
-        return position;
+        return blackMode ? chessEngine.getBoard().translateToBlackView(position[0],position[1]) : position;
     }
 
     private void showWinScreen() {
@@ -519,31 +541,21 @@ public class ChessApplication extends Application implements WebSocketMessageLis
         boolean turn = chessEngine.getBoard().getWhiteTurn();
         if (!turn) {
             for (Pioni p : pieces.keySet()) {
-                if (!p.getIsWhite()) pieces.get(p).setEffect(blackTurnEffect);
-                else pieces.get(p).setEffect(null);
+                    if (!p.getIsWhite()) pieces.get(p).setEffect(blackMode ? blackTurnEffect : null);
+                    else pieces.get(p).setEffect(null);
             }
+            setKingCheckEffect(false,kingChecked[1] == 1);
             return;
         }
         for (Pioni p : pieces.keySet()) {
-            if (p.getIsWhite()) pieces.get(p).setEffect(whiteTurnEffect);
+            if (p.getIsWhite()) pieces.get(p).setEffect(blackMode ? null : whiteTurnEffect);
             else pieces.get(p).setEffect(null);
         }
+        setKingCheckEffect(true,kingChecked[0] == 1);
 
     }
 
-    public void toggleTimer() {
-        if (whiteTimerRunning) {
-            blackTimerStartTime = System.nanoTime();
-            blackTimerRunning = true;
-            whitePauseTime += System.nanoTime() - whiteTimerStartTime;
-            whiteTimerRunning = false;
-        } else {
-            whiteTimerStartTime = System.nanoTime();
-            whiteTimerRunning = true;
-            blackPauseTime += System.nanoTime() - blackTimerStartTime;
-            blackTimerRunning = false;
-        }
-    }
+
     public void updateAfterEnemyMove(boolean shouldSwitch) {
         ArrayList<Pioni> currentPionia = chessEngine.getBoard().getPionia();
         ArrayList<Pioni> toRemove = new ArrayList<>();
@@ -560,23 +572,62 @@ public class ChessApplication extends Application implements WebSocketMessageLis
             pieces.remove(p);
         }
 
-        for (Pioni p :currentPionia) {
+        for (Pioni p : currentPionia) {
             ImageView piece = pieces.get(p);
             if (piece == null) {
                 addPiece(root, p);
             } else {
                 int[] coordinates = getCoordinates(p.getXPos(), p.getYPos());
-                piece.setLayoutX(coordinates[0] - piece.getFitWidth() / 2);
-                piece.setLayoutY(coordinates[1] - piece.getFitHeight() / 2);
-                piece.setVisible(!p.getCaptured());
+                double currentX = piece.getLayoutX();
+                double currentY = piece.getLayoutY();
+                double nextX = coordinates[0] - piece.getFitWidth() / 2;
+                double nextY = coordinates[1] - piece.getFitHeight() / 2;
+                    if (Math.abs(currentX - nextX) > 40 || Math.abs(currentY - nextY) > 40) {
+                        Platform.runLater(() -> {
+                            int[] currentPos = coordinatesToPosition((int) currentX, (int) currentY);
+                            previousMove = new ImageView(new Image(p.getImagePath()));
+                            previousMove.setFitWidth(60);
+                            previousMove.setFitHeight(60);
+                            previousMove.setLayoutX(piece.getLayoutX());
+                            previousMove.setLayoutY(piece.getLayoutY());
+                            previousMove.setOpacity((currentPos[1] % 2 == currentPos[0] % 2) ? 0.6 : 0.3);
+                            previousMove.setMouseTransparent(true);
+                            previousMove.setPreserveRatio(false);
+                            previousMove.setFitWidth(piece.getFitWidth());
+                            previousMove.setFitHeight(piece.getFitHeight());
+                            root.getChildren().addLast(previousMove);
+                        });
+                        TranslateTransition pieceTransition = new TranslateTransition();
+                        pieceTransition.setNode(piece);
+                        int[] origPos = coordinatesToPosition((int) currentX, (int) currentY);
+                        int[] nextPos = coordinatesToPosition((int) nextX, (int) nextY);
+                        int duration = 500 * (origPos[1] != p.getYPos() ? Math.abs(origPos[1] - nextPos[1]) : Math.abs(origPos[0] - nextPos[0]));
+                        pieceTransition.setDuration(new Duration(duration));
+                        pieceTransition.setByX(nextX - currentX);
+                        pieceTransition.setByY(nextY - currentY);
+                        pieceTransition.setCycleCount(1);
+                        pieceTransition.setAutoReverse(false);
+                        pieceTransition.setOnFinished(event -> {
+                            if (shouldSwitch)  {
+                                playPiecePlacementSound();
+                                switchTurnAnimation();
+                            }
+                            piece.setLayoutX(nextX);
+                            piece.setLayoutY(nextY);
+                            piece.setTranslateX(0);
+                            piece.setTranslateY(0);
+                            root.setCacheHint(CacheHint.QUALITY);
+                        });
+                        root.setCacheHint(CacheHint.SPEED);
+                        piece.setEffect(null);
+                        pieceTransition.play();
+                    }
+
+                    piece.setVisible(!p.getCaptured());
             }
         }
 
-        if (shouldSwitch) {
-            switchTurnAnimation();
-            toggleTimer();
-            playPiecePlacementSound();
-        }
+        if (shouldSwitch) toggleTimer();
         updateCapturedPieces();
 
         if (chessEngine.getBoard().getGameEnded()) {
@@ -587,12 +638,13 @@ public class ChessApplication extends Application implements WebSocketMessageLis
         launch();
     }
 
-    private void setKingCheckEffect(boolean white) {
+    private void setKingCheckEffect(boolean white, boolean isChecked) {
+        Pioni king = chessEngine.getBoard().getPionia().stream().filter(p -> p.getIsWhite() == white && p.getType().equals("Vasilias")).findFirst().orElse(null);
+        if (!isChecked) return;
         DropShadow ds = new DropShadow();
         ds.setColor(Color.RED);
         ds.setRadius(2);
         ds.setSpread(1);
-        Pioni king = chessEngine.getBoard().getPionia().stream().filter(p -> p.getIsWhite() == white && p.getType().equals("Vasilias")).findFirst().orElse(null);
         if (king == null) return;
         pieces.get(king).setEffect(ds);
     }
@@ -625,15 +677,56 @@ public class ChessApplication extends Application implements WebSocketMessageLis
         }
 
     }
-    public void setMode(boolean offlineMode){
+    public void setMode(boolean offlineMode, boolean whiteMode){
         this.offlineMode = offlineMode;
+        this.blackMode = !whiteMode;
+    }
+    public void setMinutesAllowed(int minutesAllowed){
+        secondsAllowed = minutesAllowed * 60;
     }
     public void setWebSocket(WebSocket socket){ this.webSocket = socket; }
 
+    private void updateTimerLabel(Label label, int remainingTime) {
+        int minutes = remainingTime / 60;
+        int seconds = remainingTime % 60;
+        label.setText(String.format("%02d:%02d", minutes, seconds));
+    }
+    private void toggleTimer() {
+        whiteTimerRunning = !whiteTimerRunning;
+        blackTimerRunning = !blackTimerRunning;
+    }
+
+    private void overrideTimersFromServer(long whiteTime, long blackTime) {
+        whiteRemainingTime = (int) (whiteTime / 1000); // Convert ms to seconds
+        blackRemainingTime = (int) (blackTime / 1000); // Convert ms to seconds
+        Platform.runLater(() -> {
+            System.out.println("Timers overridden from server: White: " + whiteRemainingTime + "s, Black: " + blackRemainingTime + "s");
+        });
+    }
     @Override
     public void onMessageReceived(Message message) {
         if (message.getCode() == RequestCodes.ENEMY_MOVE) {
             chessEngine.refreshBoard(()->updateAfterEnemyMove(Boolean.parseBoolean(message.getData())));
+        }
+        else if (message.getCode() == RequestCodes.KING_CHECK_BLACK){
+            boolean isChecked = Boolean.parseBoolean(message.getData());
+            kingChecked[1] = isChecked ? 1 : 0;
+            Platform.runLater(() -> setKingCheckEffect(false,isChecked));
+        }
+        else if (message.getCode() == RequestCodes.KING_CHECK_WHITE){
+            boolean isChecked = Boolean.parseBoolean(message.getData());
+            kingChecked[0] = isChecked ? 1 : 0;
+            Platform.runLater(() -> setKingCheckEffect(true,isChecked));
+        }
+        else if (message.getCode() == RequestCodes.TIMER){
+            if (message.getCode() == RequestCodes.TIMER) {
+                try {
+                    long[] times = Message.mapper.readValue(message.getData(), long[].class);
+                    overrideTimersFromServer(times[0], times[1]);
+                } catch (JsonProcessingException e) {
+                    System.err.println("Failed to parse TIMER message: " + e.getMessage());
+                }
+            }
         }
     }
 
