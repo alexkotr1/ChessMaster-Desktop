@@ -18,7 +18,7 @@
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-web</artifactId>
-            <version>23.0.1</version>
+            <version>21.0.5</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -51,8 +51,9 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.13.0</version>
                 <configuration>
-                    <source>21</source>
-                    <target>21</target>
+                    <source>22</source>
+                    <target>22</target>
+                    <release>22</release>
                 </configuration>
             </plugin>
             <plugin>
@@ -63,7 +64,7 @@
                     <execution>
                         <id>default-cli</id>
                         <configuration>
-                            <mainClass>com.alexk.chess.ChessApplication</mainClass>
+                            <mainClass>com.alexk.chess.Main</mainClass>
                             <launcher>app</launcher>
                             <jlinkZipName>app</jlinkZipName>
                             <jlinkImageName>app</jlinkImageName>
@@ -85,7 +86,7 @@
                             <goal>package</goal>
                         </goals>
                         <configuration>
-                            <mainClass>com.alexk.chess.ChessApplication</mainClass>
+                            <mainClass>com.alexk.chess.Main</mainClass>
                             <bundleJre>true</bundleJre>
                             <generateInstaller>true</generateInstaller>
                             <administratorRequired>false</administratorRequired>
@@ -106,19 +107,6 @@
                                 <createDesktopIconTask>true</createDesktopIconTask>
                                 <removeOldLibs>true</removeOldLibs>
                             </winConfig>
-                            <macConfig>
-
-                                <!-- general properties -->
-                                <appId>com.alexk.chess</appId>
-                                <icnsFile>src/main/resources/icon.ico</icnsFile>
-                                <generateDmg>true</generateDmg>
-                                <generatePkg>false</generatePkg>
-                                <relocateJar>true</relocateJar>
-                                <macStartup>ARM64</macStartup>
-                                <infoPlist>
-                                    <bundlePackageType>APPL</bundlePackageType>
-                                </infoPlist>
-                            </macConfig>
                         </configuration>
                     </execution>
                 </executions>

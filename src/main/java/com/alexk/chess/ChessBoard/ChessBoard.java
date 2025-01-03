@@ -17,10 +17,25 @@ public abstract class ChessBoard {
     public abstract void setMovesRemaining(int movesRemaining);
     public abstract int getMovesRemaining();
     public abstract void capture(Pioni p);
-    public abstract void printBoard();
     public abstract void setGameEndedWinner(Boolean gameEnded, ChessEngine.Winner winner);
     public abstract Boolean getGameEnded();
     public abstract ChessEngine.Winner getWinner();
+    public void printBoard(){
+            System.out.println("   a  b  c  d  e  f  g  h  \n  ------------------------");
+            for (int y = 8;y>=1;y--){
+                System.out.printf("%d  %s  %s  %s  %s  %s  %s  %s  %s %d%n",y,
+                        this.getPioniAt('A',y) == null ? " " : this.getPioniAt('A',y).print(),
+                        this.getPioniAt('B',y) == null ? " " : this.getPioniAt('B',y).print(),
+                        this.getPioniAt('C',y) == null ? " " : this.getPioniAt('C',y).print(),
+                        this.getPioniAt('D',y) == null ? " " : this.getPioniAt('D',y).print(),
+                        this.getPioniAt('E',y) == null ? " " : this.getPioniAt('E',y).print(),
+                        this.getPioniAt('F',y) == null ? " " : this.getPioniAt('F',y).print(),
+                        this.getPioniAt('G',y) == null ? " " : this.getPioniAt('G',y).print(),
+                        this.getPioniAt('H',y) == null ? " " : this.getPioniAt('H',y).print(),
+                        y);
+            }
+            System.out.println("  ------------------------\n   a  b  c  d  e  f  g  h");
+    }
     public int[] translateToBlackView(int x, int y){
         return new int[]{Math.abs(x - 9),Math.abs(y - 9)};
     }

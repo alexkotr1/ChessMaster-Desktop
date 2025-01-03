@@ -1,9 +1,9 @@
 module com.alexk.chessgui {
-    requires javafx.web;
-    requires javafx.media;
     requires tyrus.standalone.client;
     requires com.fasterxml.jackson.databind;
     requires java.desktop;
+    requires javafx.web;
+    requires java.logging;
     exports com.alexk.chess;
     exports com.alexk.chess.Pionia;
     exports com.alexk.chess.ChessBoard;

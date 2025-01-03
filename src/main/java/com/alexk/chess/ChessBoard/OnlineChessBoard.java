@@ -61,23 +61,7 @@ public class OnlineChessBoard extends ChessBoard {
     public int getMovesRemaining(){ return movesRemaining; }
     public ChessEngine.Winner getWinner() { return winner; }
     public void setWinner(ChessEngine.Winner winner) { this.winner = winner; }
-    public void printBoard(){
-        System.out.println("   a  b  c  d  e  f  g  h  \n  ------------------------");
-        for (int y = 8;y>=1;y--){
-            System.out.printf("%d  %s  %s  %s  %s  %s  %s  %s  %s %d%n",y,
-                    this.getPioniAt('A',y) == null ? " " : this.getPioniAt('A',y).print(),
-                    this.getPioniAt('B',y) == null ? " " : this.getPioniAt('B',y).print(),
-                    this.getPioniAt('C',y) == null ? " " : this.getPioniAt('C',y).print(),
-                    this.getPioniAt('D',y) == null ? " " : this.getPioniAt('D',y).print(),
-                    this.getPioniAt('E',y) == null ? " " : this.getPioniAt('E',y).print(),
-                    this.getPioniAt('F',y) == null ? " " : this.getPioniAt('F',y).print(),
-                    this.getPioniAt('G',y) == null ? " " : this.getPioniAt('G',y).print(),
-                    this.getPioniAt('H',y) == null ? " " : this.getPioniAt('H',y).print(),
-                    y);
-        }
-        System.out.println("  ------------------------\n   a  b  c  d  e  f  g  h");
 
-    }
     public void capture(Pioni p){}
     public void placePioniAt(Pioni p, char xPos, int yPos){}
 

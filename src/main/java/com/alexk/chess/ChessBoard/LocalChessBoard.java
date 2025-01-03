@@ -46,7 +46,7 @@ public class LocalChessBoard extends ChessBoard {
                         break;
                     }
                     case 3:{
-                        pionia.add(new Vasilissa(x == 0,this,'D',x == 0 ? 3 : 8,null,false));
+                        pionia.add(new Vasilissa(x == 0,this,'D',x == 0 ? 1 : 8,null,false));
                         pionia.add(new Vasilias(x == 0,this,'E',x == 0 ? 1 : 8,null,false));
                         break;
                     }
@@ -68,11 +68,12 @@ public class LocalChessBoard extends ChessBoard {
         Pioni p = getPioniAt(xOrig,yOrig);
         Pioni pDest = getPioniAt(xDest,yDest);
         if (p.getType().equals("Stratiotis")) movesRemaining = 100;
-        placePioniAt(p,xDest,yDest);
         if (pDest != null) capture(pDest);
+        placePioniAt(p,xDest,yDest);
         if (p.getType().equals("Pyrgos")) ((Pyrgos) p).setMoved(true);
         else if (p.getType().equals("Vasilias")) ((Vasilias) p).setMoved(true);
     }
+
     public Boolean getWhiteTurn(){
         return whiteTurn;
     }
@@ -85,23 +86,7 @@ public class LocalChessBoard extends ChessBoard {
     }
     public Boolean getGameEnded() { return gameEnded; }
     public ChessEngine.Winner getWinner() { return winner; }
-    public void printBoard(){
-        System.out.println("   a  b  c  d  e  f  g  h  \n  ------------------------");
-        for (int y = 8;y>=1;y--){
-            System.out.printf("%d  %s  %s  %s  %s  %s  %s  %s  %s %d%n",y,
-                    this.getPioniAt('A',y) == null ? " " : this.getPioniAt('A',y).print(),
-                    this.getPioniAt('B',y) == null ? " " : this.getPioniAt('B',y).print(),
-                    this.getPioniAt('C',y) == null ? " " : this.getPioniAt('C',y).print(),
-                    this.getPioniAt('D',y) == null ? " " : this.getPioniAt('D',y).print(),
-                    this.getPioniAt('E',y) == null ? " " : this.getPioniAt('E',y).print(),
-                    this.getPioniAt('F',y) == null ? " " : this.getPioniAt('F',y).print(),
-                    this.getPioniAt('G',y) == null ? " " : this.getPioniAt('G',y).print(),
-                    this.getPioniAt('H',y) == null ? " " : this.getPioniAt('H',y).print(),
-                    y);
-        }
-        System.out.println("  ------------------------\n   a  b  c  d  e  f  g  h");
 
-    }
     @Override
     public ChessBoard clone() {
         ChessBoard chessBoard = new LocalChessBoard();

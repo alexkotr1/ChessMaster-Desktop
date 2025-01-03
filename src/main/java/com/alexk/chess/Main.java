@@ -1,17 +1,23 @@
 package com.alexk.chess;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.effect.DropShadow;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+
+import java.util.Objects;
 
 public class Main extends Application implements WebSocketMessageListener {
     private static boolean isHost;
@@ -22,13 +28,16 @@ public class Main extends Application implements WebSocketMessageListener {
     private static Label messageLabel;
     public static WebSocket webSocket;
     private ChessApplication chessApp;
-    private int timerMinutes = 10; // Default timer value
+    private int timerMinutes = 10;
 
     @Override
     public void start(Stage primaryStage) {
         VBox root = getDialogStage();
         this.primaryStage = primaryStage;
-        Scene scene = new Scene(root, 300, 300);
+
+        Scene scene = new Scene(root, 400, 400);
+        scene.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/styles.css")).toExternalForm());
+
         dialogStage.setScene(scene);
         dialogStage.showAndWait();
     }
@@ -36,36 +45,55 @@ public class Main extends Application implements WebSocketMessageListener {
     public VBox getDialogStage() {
         webSocket = new WebSocket(this);
         dialogStage.initModality(Modality.NONE);
-        dialogStage.setTitle("Game Options");
+        dialogStage.setTitle("Chess Game Menu");
 
-        VBox root = new VBox(10);
-        root.setPadding(new Insets(15));
+        // Main Layout
+        VBox root = new VBox(15);
+        root.setPadding(new Insets(20));
+        root.setAlignment(Pos.TOP_CENTER);
+        root.setStyle("-fx-background-color: linear-gradient(to bottom, #2C3E50, #4CA1AF);");
 
-        Button hostButton = new Button("Host a Game");
-        Button joinButton = new Button("Join a Game");
-        Button offlineButton = new Button("Offline Mode");
+        // Title
+        Label titleLabel = new Label("Chess Game");
+        titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 30));
+        titleLabel.setTextFill(Color.WHITE);
+        titleLabel.setEffect(new DropShadow(5, Color.BLACK));
+
+        // Buttons
+        Button hostButton = createButton("Host a Game");
+        Button joinButton = createButton("Join a Game");
+        Button offlineButton = createButton("Offline Mode");
+        Button confirmButton = createButton("Confirm");
 
         TextField codeField = new TextField();
         codeField.setPromptText("Enter game code");
         codeField.setVisible(false);
+
+        // Message Label
         messageLabel = new Label();
+        messageLabel.setTextFill(Color.GOLD);
+        messageLabel.setWrapText(true);
 
-        Button confirmButton = new Button("Confirm");
-
+        // Timer Controls
         HBox timerControls = new HBox(10);
-        timerControls.setPadding(new Insets(10));
-        timerControls.setStyle("-fx-border-color: gray; -fx-border-width: 1; -fx-border-radius: 5;");
+        timerControls.setAlignment(Pos.CENTER);
+        timerControls.setVisible(false);
 
         Label timerLabel = new Label("Timer (minutes): ");
-        Label timerValueLabel = new Label(String.valueOf(timerMinutes));
+        timerLabel.setTextFill(Color.WHITE);
 
-        Button increaseTimerButton = new Button("▶");
+        Label timerValueLabel = new Label(String.valueOf(timerMinutes));
+        timerValueLabel.setTextFill(Color.GOLD);
+        timerValueLabel.setFont(Font.font("Arial", FontWeight.BOLD, 16));
+
+        Button increaseTimerButton = createControlButton("▶");
+        Button decreaseTimerButton = createControlButton("◀");
+
         increaseTimerButton.setOnAction(e -> {
             timerMinutes++;
             timerValueLabel.setText(String.valueOf(timerMinutes));
         });
 
-        Button decreaseTimerButton = new Button("◀");
         decreaseTimerButton.setOnAction(e -> {
             if (timerMinutes > 1) {
                 timerMinutes--;
@@ -76,6 +104,7 @@ public class Main extends Application implements WebSocketMessageListener {
         timerControls.getChildren().addAll(timerLabel, decreaseTimerButton, timerValueLabel, increaseTimerButton);
 
         hostButton.setOnAction(e -> {
+            timerControls.setVisible(true);
             isHost = true;
             isOfflineMode = false;
             gameCode = null;
@@ -84,6 +113,7 @@ public class Main extends Application implements WebSocketMessageListener {
         });
 
         joinButton.setOnAction(e -> {
+            timerControls.setVisible(false);
             isHost = false;
             isOfflineMode = false;
             messageLabel.setText("You have chosen to join a game. Please enter the game code.");
@@ -91,6 +121,7 @@ public class Main extends Application implements WebSocketMessageListener {
         });
 
         offlineButton.setOnAction(e -> {
+            timerControls.setVisible(true);
             isOfflineMode = true;
             isHost = false;
             gameCode = null;
@@ -98,66 +129,70 @@ public class Main extends Application implements WebSocketMessageListener {
             codeField.setVisible(false);
         });
 
-        confirmButton.setOnAction(e -> {
-            if (!isHost && !isOfflineMode && codeField.isVisible()) {
-                gameCode = codeField.getText();
-                Message message = new Message();
-                message.setCode(RequestCodes.JOIN_GAME);
-                message.setData(gameCode);
-                message.send(webSocket);
-                GameSession.setState(GameSession.GameState.WAITING_FOR_PLAYER_JOIN);
-                message.onReply(res -> {
-                    if (res.getCode() == RequestCodes.JOIN_GAME_FAILURE) {
-                        Platform.runLater(() -> messageLabel.setText("Invalid Code!"));
-                        return;
-                    }
-                    Platform.runLater(() -> {
-                        try {
-                            int time = Message.mapper.readValue(res.getData(),int.class);
-                            chessApp = new ChessApplication();
-                            chessApp.setMode(false, false);
-                            chessApp.setWebSocket(webSocket);
-                            chessApp.setMinutesAllowed(time);
-                            chessApp.start(primaryStage);
-                            dialogStage.close();
+        confirmButton.setOnAction(e -> handleConfirm(codeField));
 
-                        }catch(JsonProcessingException err){
-                            System.err.println(err.getMessage());
-                        }
+        root.getChildren().addAll(
+                titleLabel,
+                timerControls,
+                hostButton,
+                joinButton,
+                offlineButton,
+                codeField,
+                confirmButton,
+                messageLabel
+        );
 
-                    });
-                });
-                return;
-            }
-            if (isOfflineMode) {
-                chessApp = new ChessApplication();
-                chessApp.setMode(true, true);
-                chessApp.setMinutesAllowed(timerMinutes);
-                chessApp.start(primaryStage);
-                dialogStage.close();
-            } else if (isHost) {
-                Message message = new Message();
-                message.setCode(RequestCodes.HOST_GAME);
-                message.setData(timerMinutes);
-                message.send(webSocket);
-                GameSession.setState(GameSession.GameState.WAITING_FOR_HOST_CODE);
-                message.onReply(res -> {
-                    GameSession.setState(GameSession.GameState.WAITING_FOR_PLAYER_JOIN);
-                    Platform.runLater(() -> messageLabel.setText("Code: " + res.getData()));
-                });
-            }
-        });
-
-        root.getChildren().addAll(timerControls, hostButton, joinButton, offlineButton, codeField, confirmButton, messageLabel);
         return root;
     }
 
-    public static boolean isHost() {
-        return isHost;
+    private Button createButton(String text) {
+        Button button = new Button(text);
+        button.setFont(Font.font("Arial", FontWeight.BOLD, 16));
+        button.setStyle("-fx-background-color: #16A085; -fx-text-fill: white; -fx-background-radius: 10;");
+        button.setOnMouseEntered(e -> button.setStyle("-fx-background-color: #1ABC9C; -fx-text-fill: white; -fx-background-radius: 10;"));
+        button.setOnMouseExited(e -> button.setStyle("-fx-background-color: #16A085; -fx-text-fill: white; -fx-background-radius: 10;"));
+        return button;
     }
 
-    public static boolean isOfflineMode() {
-        return isOfflineMode;
+    private Button createControlButton(String text) {
+        Button button = new Button(text);
+        button.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        button.setStyle("-fx-background-color: #2980B9; -fx-text-fill: white; -fx-background-radius: 5;");
+        return button;
+    }
+
+    private void handleConfirm(TextField codeField) {
+        if (!isHost && !isOfflineMode && codeField.isVisible()) {
+            gameCode = codeField.getText();
+            Message message = new Message();
+            message.setCode(RequestCodes.JOIN_GAME);
+            message.setData(gameCode);
+            message.send(webSocket);
+            message.onReply(res -> {
+                if (res.getCode() == RequestCodes.JOIN_GAME_FAILURE) {
+                    Platform.runLater(() -> messageLabel.setText("Invalid Code!"));
+                    return;
+                }
+                Platform.runLater(() -> startGame(false,false));
+            });
+        } else if (isOfflineMode) {
+            startGame(true,true);
+        } else if (isHost) {
+            Message message = new Message();
+            message.setCode(RequestCodes.HOST_GAME);
+            message.setData(timerMinutes);
+            message.send(webSocket);
+            message.onReply(res -> Platform.runLater(() -> messageLabel.setText("Code: " + res.getData())));
+        }
+    }
+
+    private void startGame(boolean offlineMode, boolean isHost) {
+        chessApp = new ChessApplication();
+        if (!offlineMode) chessApp.setWebSocket(webSocket);
+        chessApp.setMode(offlineMode, isHost);
+        chessApp.setMinutesAllowed(timerMinutes);
+        chessApp.start(primaryStage);
+        dialogStage.close();
     }
 
     public static void main(String[] args) {
@@ -167,14 +202,7 @@ public class Main extends Application implements WebSocketMessageListener {
     @Override
     public void onMessageReceived(Message message) {
         if (message.getCode() == RequestCodes.SECOND_PLAYER_JOINED) {
-            Platform.runLater(() -> {
-                chessApp = new ChessApplication();
-                chessApp.setMode(false, true);
-                chessApp.setWebSocket(webSocket);
-                chessApp.setMinutesAllowed(timerMinutes);
-                chessApp.start(primaryStage);
-                dialogStage.close();
-            });
+            Platform.runLater(() -> startGame(false,true));
         }
     }
 }
