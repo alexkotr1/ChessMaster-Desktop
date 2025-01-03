@@ -48,6 +48,7 @@ public class LocalChessEngine extends ChessEngine {
             chessBoard.setWhiteTurn(!chessBoard.getWhiteTurn());
             chessBoard.move(xOrig,yOrig,Utilities.int2Char(dest[0] > orig[0] ? orig[0] + 2 : orig[0] - 2),yOrig);
             chessBoard.move(Utilities.int2Char(dest[0]),dest[1],Utilities.int2Char(dest[0] > orig[0] ? orig[0] - 1 : orig[0] + 1),yOrig);
+            checkGameEnd(p.getIsWhite());
             return moved;
         }
 
@@ -58,6 +59,7 @@ public class LocalChessEngine extends ChessEngine {
             moved.add(pioniAtDest);
         }
         if (!moved.isEmpty()) chessBoard.setWhiteTurn(!chessBoard.getWhiteTurn());
+        checkGameEnd(p.getIsWhite());
         return moved;
     }
 
@@ -126,6 +128,15 @@ public class LocalChessEngine extends ChessEngine {
         }
         return legalMovesWhenKingThreatened;
     }
+    public void checkGameEnd(boolean white){
+        if (checkKingMat(chessBoard, !white)) {
+            HashMap<Pioni, ArrayList<int[]>> legalMovesWhenEnemyKingThreatened = kingCheckMate(!white);
+            if (legalMovesWhenEnemyKingThreatened == null || legalMovesWhenEnemyKingThreatened.isEmpty()) getBoard().setGameEndedWinner(true,white ? Winner.White : Winner.Black);
+        }
+        else if (stalemateCheck(!white) || chessBoard.getMovesRemaining() == 0) {
+            getBoard().setGameEndedWinner(true, Winner.Draw);
+        }
+    }
     public boolean stalemateCheck(boolean white) {
         ArrayList<Pioni> duplicatePieces = chessBoard.getPionia().stream().filter(pioni -> pioni.getIsWhite() == white && !pioni.getCaptured()).collect(Collectors.toCollection(ArrayList::new));
         for (Pioni p : duplicatePieces) {
@@ -143,7 +154,7 @@ public class LocalChessEngine extends ChessEngine {
         testChessBoard.move(p.getXPos(), p.getYPos(), Utilities.int2Char(dest[0]), dest[1]);
         return checkKingMat(testChessBoard,p.getIsWhite());
     }
-    public ChessBoard getBoard() { return this.chessBoard; }
+    public ChessBoard getBoard() { return chessBoard; }
     public void refreshBoard(Runnable callback) {}
 
 }
