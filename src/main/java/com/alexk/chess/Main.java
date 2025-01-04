@@ -44,14 +44,14 @@ public class Main extends Application implements WebSocketMessageListener {
     public VBox getDialogStage() {
         webSocket = new WebSocket(this);
         dialogStage.initModality(Modality.NONE);
-        dialogStage.setTitle("Chess Game Menu");
+        dialogStage.setTitle("Chess Master");
 
         VBox root = new VBox(15);
         root.setPadding(new Insets(20));
         root.setAlignment(Pos.TOP_CENTER);
         root.setStyle("-fx-background-color: linear-gradient(to bottom, #2C3E50, #4CA1AF);");
 
-        Label titleLabel = new Label("Chess Game");
+        Label titleLabel = new Label("Chess Master");
         titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 30));
         titleLabel.setTextFill(Color.WHITE);
         titleLabel.setEffect(new DropShadow(5, Color.BLACK));

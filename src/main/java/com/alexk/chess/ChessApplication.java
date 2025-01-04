@@ -230,7 +230,7 @@ public class ChessApplication extends Application implements WebSocketMessageLis
         }
 
         Scene scene = new Scene(root, 1000, 800);
-        stage.setTitle("Chess Game");
+        stage.setTitle("Chess Master");
         stage.setResizable(false);
         stage.setScene(scene);
         stage.show();
