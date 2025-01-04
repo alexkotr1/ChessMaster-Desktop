@@ -5,9 +5,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.alexk</groupId>
-    <artifactId>Chess</artifactId>
-    <version>1.0-SNAPSHOT</version>
-    <name>Chess</name>
+    <artifactId>ChessMaster</artifactId>
+    <version>1.0</version>
+    <name>Chess Master</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -95,7 +95,7 @@
                                 <generateSetup>true</generateSetup>
                                 <generateMsi>false</generateMsi>
                                 <headerType>gui</headerType>
-                                <icoFile>src/main/resources/icon.ico</icoFile>
+                                <icoFile>src/main/resources/main.ico</icoFile>
                                 <wrapJar>false</wrapJar>
                                 <fileVersion>1.0.0.0</fileVersion>
                                 <productVersion>1.0.0.0</productVersion>
