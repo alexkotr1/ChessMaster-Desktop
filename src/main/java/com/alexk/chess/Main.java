@@ -27,7 +27,6 @@ public class Main extends Application implements WebSocketMessageListener {
     private Stage primaryStage = new Stage();
     private static Label messageLabel;
     public static WebSocket webSocket;
-    private ChessApplication chessApp;
     private int timerMinutes = 10;
 
     @Override
@@ -47,19 +46,16 @@ public class Main extends Application implements WebSocketMessageListener {
         dialogStage.initModality(Modality.NONE);
         dialogStage.setTitle("Chess Game Menu");
 
-        // Main Layout
         VBox root = new VBox(15);
         root.setPadding(new Insets(20));
         root.setAlignment(Pos.TOP_CENTER);
         root.setStyle("-fx-background-color: linear-gradient(to bottom, #2C3E50, #4CA1AF);");
 
-        // Title
         Label titleLabel = new Label("Chess Game");
         titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 30));
         titleLabel.setTextFill(Color.WHITE);
         titleLabel.setEffect(new DropShadow(5, Color.BLACK));
 
-        // Buttons
         Button hostButton = createButton("Host a Game");
         Button joinButton = createButton("Join a Game");
         Button offlineButton = createButton("Offline Mode");
@@ -69,12 +65,10 @@ public class Main extends Application implements WebSocketMessageListener {
         codeField.setPromptText("Enter game code");
         codeField.setVisible(false);
 
-        // Message Label
         messageLabel = new Label();
         messageLabel.setTextFill(Color.GOLD);
         messageLabel.setWrapText(true);
 
-        // Timer Controls
         HBox timerControls = new HBox(10);
         timerControls.setAlignment(Pos.CENTER);
         timerControls.setVisible(false);
@@ -187,7 +181,7 @@ public class Main extends Application implements WebSocketMessageListener {
     }
 
     private void startGame(boolean offlineMode, boolean isHost) {
-        chessApp = new ChessApplication();
+        ChessApplication chessApp = new ChessApplication();
         if (!offlineMode) chessApp.setWebSocket(webSocket);
         chessApp.setMode(offlineMode, isHost);
         chessApp.setMinutesAllowed(timerMinutes);

@@ -3,7 +3,6 @@ package com.alexk.chess;
 import com.alexk.chess.ChessEngine.ChessEngine;
 import com.alexk.chess.Pionia.Pioni;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import javafx.animation.AnimationTimer;
 import javafx.animation.TranslateTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -59,12 +58,9 @@ public class ChessApplication extends Application implements WebSocketMessageLis
     private WebSocket webSocket;
     private boolean blackMode = false;
     private final int[] kingChecked = new int[]{0, 0};
-    private AnimationTimer gameTimer;
     private Timer whiteTimer;
     private Timer blackTimer;
-    public ChessApplication() {
-
-    }
+    public ChessApplication() {}
 
 
     @Override
