@@ -317,15 +317,24 @@ public class ChessApplication extends Application implements WebSocketMessageLis
                         case "Stratigos" -> selection[2] = 2;
                         case "Vasilissa" -> selection[2] = 3;
                     }
-                    msg.setData(selection);
-                    msg.send(webSocket);
-                    msg.onReply(reply -> {
-                        Platform.runLater(() -> {
+                    if (!offlineMode){
+                        msg.setData(selection);
+                        msg.send(webSocket);
+                        msg.onReply(_ -> {
+                            Platform.runLater(() -> {
+                                root.getChildren().remove(pieces.get(p));
+                                pieces.remove(p);
+                            });
+                            chessEngine.refreshBoard(() -> updateAfterEnemyMove(false));
+                        });
+                    } else {
+                        Pioni upgraded = chessEngine.upgradePioni(p,str);
+                        if (upgraded != null) {
                             root.getChildren().remove(pieces.get(p));
                             pieces.remove(p);
-                        });
-                        chessEngine.refreshBoard(() -> updateAfterEnemyMove(false));
-                    });
+                            addPiece(root, upgraded);
+                        }
+                    }
                 });
             }
             switchTurnAnimation();

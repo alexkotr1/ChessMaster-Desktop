@@ -1,5 +1,6 @@
 package com.alexk.chess;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -167,6 +168,8 @@ public class Main extends Application implements WebSocketMessageListener {
                     Platform.runLater(() -> messageLabel.setText("Invalid Code!"));
                     return;
                 }
+                try { timerMinutes = Message.mapper.readValue(res.getData(),int.class);}
+                catch (JsonProcessingException e) { System.err.println(e.getMessage()); }
                 Platform.runLater(() -> startGame(false,false));
             });
         } else if (isOfflineMode) {

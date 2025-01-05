@@ -13,7 +13,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit.version>5.10.2</junit.version>
     </properties>
-
     <dependencies>
         <dependency>
             <groupId>org.openjfx</groupId>
@@ -86,7 +85,7 @@
                             <goal>package</goal>
                         </goals>
                         <configuration>
-                            <mainClass>com.alexk.chess.Main</mainClass>
+                            <mainClass>com.alexk.chess.ChessApplication</mainClass>
                             <bundleJre>true</bundleJre>
                             <generateInstaller>true</generateInstaller>
                             <administratorRequired>false</administratorRequired>
@@ -95,7 +94,7 @@
                                 <generateSetup>true</generateSetup>
                                 <generateMsi>false</generateMsi>
                                 <headerType>gui</headerType>
-                                <icoFile>src/main/resources/main.ico</icoFile>
+                                <icoFile>src/main/resources/icon.ico</icoFile>
                                 <wrapJar>false</wrapJar>
                                 <fileVersion>1.0.0.0</fileVersion>
                                 <productVersion>1.0.0.0</productVersion>
@@ -107,6 +106,17 @@
                                 <createDesktopIconTask>true</createDesktopIconTask>
                                 <removeOldLibs>true</removeOldLibs>
                             </winConfig>
+                            <macConfig>
+                                <appId>com.alexk.chess</appId>
+                                <icnsFile>src/main/resources/icon.ico</icnsFile>
+                                <generateDmg>true</generateDmg>
+                                <generatePkg>false</generatePkg>
+                                <relocateJar>true</relocateJar>
+                                <macStartup>ARM64</macStartup>
+                                <infoPlist>
+                                    <bundlePackageType>APPL</bundlePackageType>
+                                </infoPlist>
+                            </macConfig>
                         </configuration>
                     </execution>
                 </executions>
