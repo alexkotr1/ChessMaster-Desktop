@@ -94,7 +94,7 @@
                                 <generateSetup>true</generateSetup>
                                 <generateMsi>false</generateMsi>
                                 <headerType>gui</headerType>
-                                <icoFile>src/main/resources/icon.ico</icoFile>
+                                <icoFile>src/main/resources/main.ico</icoFile>
                                 <wrapJar>false</wrapJar>
                                 <fileVersion>1.0.0.0</fileVersion>
                                 <productVersion>1.0.0.0</productVersion>
