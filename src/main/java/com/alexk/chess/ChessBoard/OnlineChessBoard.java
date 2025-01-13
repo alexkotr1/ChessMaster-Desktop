@@ -5,6 +5,7 @@ import com.alexk.chess.Pionia.Pioni;
 import com.alexk.chess.Utilities;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class OnlineChessBoard extends ChessBoard {
     private final ArrayList<Pioni> pionia = new ArrayList<>();
@@ -13,6 +14,7 @@ public class OnlineChessBoard extends ChessBoard {
     private Boolean gameEnded = false;
     private ChessEngine.Winner winner = null;
     private String state;
+    private HashMap<Pioni,ArrayList<int[]>> possibleMoves = new HashMap<>();
     public OnlineChessBoard(ArrayList<Pioni> pionia, boolean whiteTurn, int movesRemaining, boolean gameEnded, String state, ChessEngine.Winner winner){
         this.pionia.addAll(pionia);
         this.whiteTurn = whiteTurn;
@@ -54,14 +56,13 @@ public class OnlineChessBoard extends ChessBoard {
     public Boolean getGameEnded() { return gameEnded; }
     public void setWhiteTurn(boolean whiteTurn){ this.whiteTurn = whiteTurn; }
     public void setMovesRemaining(int movesRemaining){ this.movesRemaining = movesRemaining; }
-
-
+    public void setPossibleMoves(HashMap<Pioni,ArrayList<int[]>> possibleMoves){ this.possibleMoves = possibleMoves; }
+    public HashMap<Pioni,ArrayList<int[]>> getPossibleMoves() { return possibleMoves; }
     public void loadBoard(){}
     public void move(char xOrig, int yOrig, char xDest,int yDest){}
     public int getMovesRemaining(){ return movesRemaining; }
     public ChessEngine.Winner getWinner() { return winner; }
     public void setWinner(ChessEngine.Winner winner) { this.winner = winner; }
-
     public void capture(Pioni p){}
     public void placePioniAt(Pioni p, char xPos, int yPos){}
 

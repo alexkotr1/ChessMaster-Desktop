@@ -66,6 +66,7 @@ public class ChessApplication extends Application implements WebSocketMessageLis
     @Override
     public void start(Stage stage) {
         this.stage = stage;
+        stage.setOnCloseRequest(_-> System.exit(0));
         initialize();
     }
 
@@ -146,7 +147,7 @@ public class ChessApplication extends Application implements WebSocketMessageLis
         playAgain.setStyle("-fx-background-color: linear-gradient(to bottom, #F0D09F, #3F2C0E);");
         playAgain.setTextFill(Color.web("#F0D09F"));
         playAgain.setVisible(false);
-        playAgain.setOnAction(event -> {
+        playAgain.setOnAction(_ -> {
             if (!offlineMode) {
                 Message msg = new Message();
                 msg.setCode(RequestCodes.PLAY_AGAIN);
@@ -287,6 +288,7 @@ public class ChessApplication extends Application implements WebSocketMessageLis
         });
 
         piece.setOnMouseReleased(event -> {
+            System.out.println(chessEngine.toFen());
             if ((!offlineMode && chessEngine.getBoard().getWhiteTurn() == blackMode) || chessEngine.getBoard().getWhiteTurn() != p.getIsWhite() || chessEngine.getBoard().getGameEnded())
                 return;
             for (ImageView indicator : possibleMoveIndicators.values()) {
@@ -305,7 +307,7 @@ public class ChessApplication extends Application implements WebSocketMessageLis
                 pieceImage.setLayoutX(newCoordinates[0] - piece.getFitWidth() / 2);
                 pieceImage.setLayoutY(newCoordinates[1] - piece.getFitHeight() / 2);
             }
-            if (p.getType().equals("Stratiotis") && ((p.getIsWhite() && p.getYPos() == 8) || (!p.getIsWhite() && p.getYPos() == 1))) {
+            if (p.getType().equals("Stratiotis") && ((p.getIsWhite() && p.getYPos() == 8) || (!p.getIsWhite() && p.getYPos() == 1)) && offlineMode) {
                 selectUpgrade(p.getIsWhite()).thenAccept(str -> {
                     Message msg = new Message();
                     msg.setCode(RequestCodes.REQUEST_UPGRADE);
@@ -606,13 +608,9 @@ public class ChessApplication extends Application implements WebSocketMessageLis
                 piece.setVisible(!p.getCaptured());
             }
         }
-
-        if (shouldSwitch) toggleTimer();
         updateCapturedPieces();
-
-        if (chessEngine.getBoard().getGameEnded()) {
-            showWinScreen();
-        }
+        if (shouldSwitch) toggleTimer();
+        if (chessEngine.getBoard().getGameEnded()) showWinScreen();
     }
 
     public static void main(String[] args) {
@@ -729,6 +727,14 @@ public class ChessApplication extends Application implements WebSocketMessageLis
             } catch (JsonProcessingException e) {
                 System.err.println("Failed to parse TIMER message: " + e.getMessage());
             }
+        } else if (message.getCode() == RequestCodes.REQUEST_UPGRADE){
+            boolean forWhite = Boolean.parseBoolean(message.getData());
+            Platform.runLater(()->selectUpgrade(forWhite).thenAccept(str->{
+                Message reply = new Message();
+                reply.setCode(RequestCodes.REQUEST_UPGRADE_RESULT);
+                reply.setData(str);
+                reply.send(webSocket,message);
+            }));
         }
     }
 }

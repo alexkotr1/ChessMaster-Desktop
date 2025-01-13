@@ -10,8 +10,8 @@ import java.util.HashMap;
 import java.util.stream.Collectors;
 public class LocalChessEngine extends ChessEngine {
     protected final LocalChessBoard chessBoard = new LocalChessBoard();
-
     ArrayList<int[]> allPositions = new ArrayList<>();
+    private int totalMoves = 1;
     public LocalChessEngine() {
         for (int x = 1;x<=8;x++) {
             for (int y = 1; y <= 8; y++) {
@@ -68,16 +68,16 @@ public class LocalChessEngine extends ChessEngine {
             Pioni upgradedPioni;
             switch (type) {
                 case "Alogo":
-                    upgradedPioni = new Alogo(p.getIsWhite(), chessBoard, p.getXPos(), p.getYPos(),null, false);
+                    upgradedPioni = new Alogo(p.getIsWhite(), chessBoard, p.getXPos(), p.getYPos(),null, false,null,null);
                     break;
                 case "Pyrgos":
-                    upgradedPioni = new Pyrgos(p.getIsWhite(), chessBoard, p.getXPos(), p.getYPos(),null, false);
+                    upgradedPioni = new Pyrgos(p.getIsWhite(), chessBoard, p.getXPos(), p.getYPos(),null, false,true,false);
                     break;
                 case "Stratigos":
-                    upgradedPioni = new Stratigos(p.getIsWhite(), chessBoard, p.getXPos(), p.getYPos(),null, false);
+                    upgradedPioni = new Stratigos(p.getIsWhite(), chessBoard, p.getXPos(), p.getYPos(),null, false,null,null);
                     break;
                 case "Vasilissa":
-                    upgradedPioni = new Vasilissa(p.getIsWhite(), chessBoard, p.getXPos(), p.getYPos(),null, false);
+                    upgradedPioni = new Vasilissa(p.getIsWhite(), chessBoard, p.getXPos(), p.getYPos(),null, false,null,null);
                     break;
                 default:
                     return null;
@@ -156,5 +156,14 @@ public class LocalChessEngine extends ChessEngine {
     }
     public ChessBoard getBoard() { return chessBoard; }
     public void refreshBoard(Runnable callback) {}
+    @Override
+    public int getTotalMoves() {
+        return totalMoves;
+    }
+
+    @Override
+    public void setTotalMoves(int totalMoves) {
+        this.totalMoves = totalMoves;
+    }
 
 }

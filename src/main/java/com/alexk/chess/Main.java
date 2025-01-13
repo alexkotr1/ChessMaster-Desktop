@@ -24,6 +24,7 @@ public class Main extends Application implements WebSocketMessageListener {
     private static boolean isHost;
     private static String gameCode;
     private static boolean isOfflineMode;
+    private static boolean isVsAI;
     private final Stage dialogStage = new Stage();
     private Stage primaryStage = new Stage();
     private static Label messageLabel;
@@ -43,12 +44,11 @@ public class Main extends Application implements WebSocketMessageListener {
     }
 
     public VBox getDialogStage() {
-        webSocket = new WebSocket(this);
         dialogStage.initModality(Modality.NONE);
         dialogStage.setTitle("Chess Master");
 
         VBox root = new VBox(15);
-        root.setPadding(new Insets(20));
+        root.setPadding(new Insets(10));
         root.setAlignment(Pos.TOP_CENTER);
         root.setStyle("-fx-background-color: linear-gradient(to bottom, #2C3E50, #4CA1AF);");
 
@@ -60,6 +60,7 @@ public class Main extends Application implements WebSocketMessageListener {
         Button hostButton = createButton("Host a Game");
         Button joinButton = createButton("Join a Game");
         Button offlineButton = createButton("Offline Mode");
+        Button vsAIButton = createButton("Vs AI");
         Button confirmButton = createButton("Confirm");
 
         TextField codeField = new TextField();
@@ -102,6 +103,7 @@ public class Main extends Application implements WebSocketMessageListener {
             timerControls.setVisible(true);
             isHost = true;
             isOfflineMode = false;
+            isVsAI = false;
             gameCode = null;
             messageLabel.setText("You have chosen to host a game.");
             codeField.setVisible(false);
@@ -111,6 +113,7 @@ public class Main extends Application implements WebSocketMessageListener {
             timerControls.setVisible(false);
             isHost = false;
             isOfflineMode = false;
+            isVsAI = false;
             messageLabel.setText("You have chosen to join a game. Please enter the game code.");
             codeField.setVisible(true);
         });
@@ -119,8 +122,19 @@ public class Main extends Application implements WebSocketMessageListener {
             timerControls.setVisible(true);
             isOfflineMode = true;
             isHost = false;
+            isVsAI = false;
             gameCode = null;
             messageLabel.setText("You have chosen offline mode.");
+            codeField.setVisible(false);
+        });
+
+        vsAIButton.setOnAction(e -> {
+            timerControls.setVisible(true);
+            isVsAI = true;
+            isOfflineMode = false;
+            isHost = false;
+            gameCode = null;
+            messageLabel.setText("You have chosen to play against AI.");
             codeField.setVisible(false);
         });
 
@@ -132,9 +146,10 @@ public class Main extends Application implements WebSocketMessageListener {
                 hostButton,
                 joinButton,
                 offlineButton,
+                vsAIButton,
                 codeField,
-                confirmButton,
-                messageLabel
+                messageLabel,
+                confirmButton
         );
 
         return root;
@@ -157,7 +172,15 @@ public class Main extends Application implements WebSocketMessageListener {
     }
 
     private void handleConfirm(TextField codeField) {
-        if (!isHost && !isOfflineMode && codeField.isVisible()) {
+        if (isVsAI) {
+            webSocket = new WebSocket(this);
+            Message message = new Message();
+            message.setCode(RequestCodes.START_AI_GAME);
+            message.setData(timerMinutes);
+            message.send(webSocket);
+            message.onReply(_ -> Platform.runLater(() -> startGame(false, true)));
+        } else if (!isHost && !isOfflineMode && codeField.isVisible()) {
+            webSocket = new WebSocket(this);
             gameCode = codeField.getText();
             Message message = new Message();
             message.setCode(RequestCodes.JOIN_GAME);
@@ -168,13 +191,14 @@ public class Main extends Application implements WebSocketMessageListener {
                     Platform.runLater(() -> messageLabel.setText("Invalid Code!"));
                     return;
                 }
-                try { timerMinutes = Message.mapper.readValue(res.getData(),int.class);}
+                try { timerMinutes = Message.mapper.readValue(res.getData(), int.class); }
                 catch (JsonProcessingException e) { System.err.println(e.getMessage()); }
-                Platform.runLater(() -> startGame(false,false));
+                Platform.runLater(() -> startGame(false, false));
             });
         } else if (isOfflineMode) {
-            startGame(true,true);
+            startGame(true, true);
         } else if (isHost) {
+            webSocket = new WebSocket(this);
             Message message = new Message();
             message.setCode(RequestCodes.HOST_GAME);
             message.setData(timerMinutes);
@@ -199,7 +223,7 @@ public class Main extends Application implements WebSocketMessageListener {
     @Override
     public void onMessageReceived(Message message) {
         if (message.getCode() == RequestCodes.SECOND_PLAYER_JOINED) {
-            Platform.runLater(() -> startGame(false,true));
+            Platform.runLater(() -> startGame(false, true));
         }
     }
 }

@@ -40,7 +40,16 @@ public class OnlineChessBoardKeyDeserializer extends KeyDeserializer {
                     int yPos = Integer.parseInt(pioniParts[3]);
                     String id = pioniParts[4];
                     Boolean cap = Boolean.parseBoolean(pioniParts[5]);
-                    Pioni pioni = PioniFactory.createPioni(type, isWhite, null, xPos, yPos, id, cap);
+                    Boolean moved = null;
+                    Boolean kingSide = null;
+                    if (type.equals("Vasilias")){
+                        moved = Boolean.parseBoolean(parts[6]);
+                    }
+                    else if (type.equals("Pyrgos")){
+                        moved = Boolean.parseBoolean(parts[6]);
+                        kingSide = Boolean.parseBoolean(parts[7]);
+                    }
+                    Pioni pioni = PioniFactory.createPioni(type, isWhite, null, xPos, yPos, id, cap,moved, kingSide);
                     Pionia.add(pioni);
                 }
             }

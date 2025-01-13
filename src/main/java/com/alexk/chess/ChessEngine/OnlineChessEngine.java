@@ -15,15 +15,19 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 public class OnlineChessEngine extends ChessEngine {
-    private WebSocket socket;
+    private final WebSocket socket;
     public OnlineChessBoard chessBoard;
+
     public OnlineChessEngine(WebSocket socket) {
         this.socket = socket;
         refreshBoard(()->{});
     }
 
 
+    @Override
+    public void playChess() {
 
+    }
 
     public ArrayList<Pioni> nextMove(char xOrig, int yOrig, char xDest, int yDest) {
         int[][] move = new int[2][2];
@@ -64,6 +68,9 @@ public class OnlineChessEngine extends ChessEngine {
                 if (chessBoard == null) chessBoard = new OnlineChessBoard();
                 if (!board.getPionia().isEmpty()) mergePionia(chessBoard.getPionia(), board.getPionia());
                 else this.chessBoard.setPionia(board.getPionia());
+                if (board.getWhiteTurn() != chessBoard.getWhiteTurn()) {
+
+                }
                 this.chessBoard.setWhiteTurn(board.getWhiteTurn());
                 this.chessBoard.setMovesRemaining(board.getMovesRemaining());
                 this.chessBoard.setGameEnded(board.getGameEnded());
@@ -77,6 +84,7 @@ public class OnlineChessEngine extends ChessEngine {
 
         message.send(socket);
     }
+
     private void mergePionia(ArrayList<Pioni> currentPionia, ArrayList<Pioni> refreshedPionia) {
         HashMap<String, Pioni> currentMap = currentPionia.stream()
                 .collect(Collectors.toMap(Pioni::getID, p -> p, (p1, p2) -> p1, HashMap::new));
@@ -203,7 +211,13 @@ public class OnlineChessEngine extends ChessEngine {
         }
     }
 
-    public void playChess() {}
-    public void setGameEnded(Boolean gameEnded, Winner winner) {}
+    public int getTotalMoves() {
+        return 1;
+    }
+
+
+    public void setTotalMoves(int totalMoves) {
+
+    }
 
 }

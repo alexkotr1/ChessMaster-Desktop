@@ -12,7 +12,7 @@ public class LocalChessBoard extends ChessBoard {
     private int movesRemaining = 100;
     private Boolean gameEnded = false;
     private ChessEngine.Winner winner = null;
-
+    private int totalMoves = 1;
     public void placePioniAt(Pioni p, char xPos, int yPos){
         p.setXPos(xPos);
         p.setYPos(yPos);
@@ -25,29 +25,29 @@ public class LocalChessBoard extends ChessBoard {
     }
     public void loadBoard(){
         for (int x = 1;x<=16;x++){
-            pionia.add(new Stratiotis(x < 9,this, Utilities.int2Char(x < 9 ? x : x - 8 ),x < 9 ? 2 : 7,null,false));
+            pionia.add(new Stratiotis(x < 9,this, Utilities.int2Char(x < 9 ? x : x - 8 ),x < 9 ? 2 : 7,null,false,null,null));
         }
         for (int x = 0;x<2;x++){
             for (int y = 0;y<4;y++){
                 switch (y){
                     case 0:{
-                        pionia.add(new Pyrgos(x == 0,this,'A',x == 0 ? 1 : 8,null,false));
-                        pionia.add(new Pyrgos(x == 0,this,'H',x == 0 ? 1 : 8,null,false));
+                        pionia.add(new Pyrgos(x == 0,this,'A',x == 0 ? 1 : 8,null,false, false, false));
+                        pionia.add(new Pyrgos(x == 0,this,'H',x == 0 ? 1 : 8,null,false,false, true));
                         break;
                     }
                     case 1:{
-                        pionia.add(new Alogo(x == 0,this,'B',x == 0 ? 1 : 8,null,false));
-                        pionia.add(new Alogo(x == 0,this,'G',x == 0 ? 1 : 8,null,false));
+                        pionia.add(new Alogo(x == 0,this,'B',x == 0 ? 1 : 8,null,false,null,null));
+                        pionia.add(new Alogo(x == 0,this,'G',x == 0 ? 1 : 8,null,false,null,null));
                         break;
                     }
                     case 2:{
-                        pionia.add(new Stratigos(x == 0,this,'C',x == 0 ? 1 : 8,null,false));
-                        pionia.add(new Stratigos(x == 0,this,'F',x == 0 ? 1 : 8,null,false));
+                        pionia.add(new Stratigos(x == 0,this,'C',x == 0 ? 1 : 8,null,false,null,null));
+                        pionia.add(new Stratigos(x == 0,this,'F',x == 0 ? 1 : 8,null,false,null,null));
                         break;
                     }
                     case 3:{
-                        pionia.add(new Vasilissa(x == 0,this,'D',x == 0 ? 1 : 8,null,false));
-                        pionia.add(new Vasilias(x == 0,this,'E',x == 0 ? 1 : 8,null,false));
+                        pionia.add(new Vasilissa(x == 0,this,'D',x == 0 ? 1 : 8,null,false,false,null));
+                        pionia.add(new Vasilias(x == 0,this,'E',x == 0 ? 1 : 8,null,false,null,null));
                         break;
                     }
                 }
@@ -72,6 +72,7 @@ public class LocalChessBoard extends ChessBoard {
         placePioniAt(p,xDest,yDest);
         if (p.getType().equals("Pyrgos")) ((Pyrgos) p).setMoved(true);
         else if (p.getType().equals("Vasilias")) ((Vasilias) p).setMoved(true);
+
     }
 
     public Boolean getWhiteTurn(){
@@ -86,6 +87,8 @@ public class LocalChessBoard extends ChessBoard {
     }
     public Boolean getGameEnded() { return gameEnded; }
     public ChessEngine.Winner getWinner() { return winner; }
+
+
 
     @Override
     public ChessBoard clone() {

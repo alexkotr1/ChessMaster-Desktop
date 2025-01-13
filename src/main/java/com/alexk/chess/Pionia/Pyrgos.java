@@ -10,7 +10,7 @@ import java.util.ArrayList;
 
 public class Pyrgos extends Pioni implements Serializable {
 private boolean moved;
-
+private boolean kingSide;
     @JsonCreator
     public Pyrgos(
             @JsonProperty("isWhite") Boolean isWhite,
@@ -18,9 +18,11 @@ private boolean moved;
             @JsonProperty("xpos") char initialX,
             @JsonProperty("ypos") int initialY,
             @JsonProperty("id") String id,
-            @JsonProperty("captured") Boolean captured
+            @JsonProperty("captured") Boolean captured,
+            @JsonProperty("moved") Boolean moved,
+            @JsonProperty("kingSide") Boolean kingSide
     ) {
-        super(isWhite, chessBoard, initialX, initialY, id, captured);
+        super(isWhite, chessBoard, initialX, initialY, id, captured,moved, kingSide);
     }
 
     @Override
@@ -33,8 +35,4 @@ private boolean moved;
         return (route != null && !route.isEmpty() && route.getLast()[0] == destX && route.getLast()[1] == y) && (this.getChessBoard().getPioniAt(x,y) == null || this.getChessBoard().getPioniAt(x,y).getIsWhite() != getIsWhite());
 
     }
-
-    public void setMoved(boolean moved) { this.moved = moved; }
-    public boolean getMoved() { return moved; }
-
 }

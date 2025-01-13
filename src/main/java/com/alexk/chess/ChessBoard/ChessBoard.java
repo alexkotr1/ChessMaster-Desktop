@@ -2,6 +2,9 @@ package com.alexk.chess.ChessBoard;
 
 import com.alexk.chess.ChessEngine.ChessEngine;
 import com.alexk.chess.Pionia.Pioni;
+import com.alexk.chess.Pionia.Pyrgos;
+import com.alexk.chess.Pionia.Vasilias;
+import com.alexk.chess.Utilities;
 
 import java.util.ArrayList;
 
@@ -20,6 +23,7 @@ public abstract class ChessBoard {
     public abstract void setGameEndedWinner(Boolean gameEnded, ChessEngine.Winner winner);
     public abstract Boolean getGameEnded();
     public abstract ChessEngine.Winner getWinner();
+
     public void printBoard(){
             System.out.println("   a  b  c  d  e  f  g  h  \n  ------------------------");
             for (int y = 8;y>=1;y--){
@@ -35,6 +39,20 @@ public abstract class ChessBoard {
                         y);
             }
             System.out.println("  ------------------------\n   a  b  c  d  e  f  g  h");
+    }
+
+    public boolean castlingRights(boolean white, boolean kingSide){
+        Vasilias king = null;
+        Pyrgos rook = null;
+        for (Pioni p : getPionia()){
+            if (p.getIsWhite() == white){
+                if (p.getType().equals("Vasilias")) king = (Vasilias) p;
+                else if (p.getType().equals("Pyrgos")){
+                    if (((Pyrgos) p).getKingSide() == kingSide) rook = (Pyrgos) p;
+                }
+            }
+        }
+        return king != null && rook != null && !king.getMoved() && !rook.getMoved();
     }
     public int[] translateToBlackView(int x, int y){
         return new int[]{Math.abs(x - 9),Math.abs(y - 9)};

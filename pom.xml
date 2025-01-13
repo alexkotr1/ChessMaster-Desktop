@@ -85,7 +85,7 @@
                             <goal>package</goal>
                         </goals>
                         <configuration>
-                            <mainClass>com.alexk.chess.ChessApplication</mainClass>
+                            <mainClass>com.alexk.chess.Main</mainClass>
                             <bundleJre>true</bundleJre>
                             <generateInstaller>true</generateInstaller>
                             <administratorRequired>false</administratorRequired>

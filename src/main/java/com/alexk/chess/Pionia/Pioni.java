@@ -30,12 +30,14 @@ import java.util.UUID;
 public abstract class Pioni implements Serializable {
     private boolean isWhite;
     private String type;
-    private int[] position = new int[2];
+    private final int[] position = new int[2];
     private ChessBoard chessBoard;
     private String id;
     private String imagePath;
     private boolean captured;
-    public Pioni(Boolean isWhite, ChessBoard chessBoard, char initialX, int initialY, String id, Boolean captured) {
+    private Boolean moved;
+    private Boolean kingSide;
+    public Pioni(Boolean isWhite, ChessBoard chessBoard, char initialX, int initialY, String id, Boolean captured, Boolean moved, Boolean kingSide) {
         this.id = id == null ? UUID.randomUUID().toString() : id;
         position[0] = Utilities.char2Int(initialX);
         position[1] = initialY;
@@ -43,6 +45,8 @@ public abstract class Pioni implements Serializable {
         this.isWhite = isWhite;
         this.chessBoard = chessBoard;
         this.captured = captured;
+        this.moved = moved;
+        this.kingSide = kingSide;
         switch (this.type){
             case "Alogo":
                 this.imagePath = this.isWhite ? "white knight.png" : "black knight.png";
@@ -168,6 +172,12 @@ public abstract class Pioni implements Serializable {
     public String getID(){ return this.id; }
     public void setId(String ID) { this.id = ID;}
 
+    public void setMoved(Boolean moved){ this.moved = moved; }
+    public Boolean getMoved(){ return moved != null && moved;  }
+
+    public void setKingSide(Boolean kingSide){ this.kingSide = kingSide; }
+    public Boolean getKingSide(){ return kingSide != null && kingSide; }
+
     public static void printRoute(ArrayList<int[]> route){
         if (route == null || route.isEmpty()) {
             System.out.println("Null or empty route");
@@ -186,8 +196,9 @@ public abstract class Pioni implements Serializable {
     public Pioni clone() {
         try {
             Pioni cloned = this.getClass()
-                    .getConstructor(Boolean.class, ChessBoard.class, char.class, int.class, String.class, Boolean.class)
-                    .newInstance(this.isWhite, null, Utilities.int2Char(this.position[0]), this.position[1], this.getID(), this.captured);
+                    .getConstructor(Boolean.class, ChessBoard.class, char.class, int.class, String.class, Boolean.class, Boolean.class, Boolean.class)
+                    .newInstance(this.getIsWhite(), null, Utilities.int2Char(this.getPosition()[0]), this.getPosition()[1], this.getID(), this.getCaptured(), this.getMoved(), this.getKingSide());
+            cloned.setImagePath(this.getImagePath());
             return cloned;
         } catch (Exception e) {
             throw new AssertionError("Clone operation failed", e);

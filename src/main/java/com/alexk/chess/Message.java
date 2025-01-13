@@ -101,15 +101,6 @@ public class Message implements Serializable {
         }
     }
 
-    public static Message parse(String res) {
-        try {
-            return mapper.readValue(res, Message.class);
-        } catch (JsonProcessingException e) {
-            System.err.println("Error parsing message: " + e.getMessage());
-        }
-        return null;
-    }
-
     public void onReply(Consumer<Message> callback) {
         if (this.replyCallback != null) {
             System.err.println("Callback already set");
