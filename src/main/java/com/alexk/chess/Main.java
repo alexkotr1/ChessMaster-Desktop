@@ -151,7 +151,12 @@ public class Main extends Application implements WebSocketMessageListener {
                 messageLabel,
                 confirmButton
         );
-
+        webSocket = new WebSocket(this);
+        Message message = new Message();
+        message.setCode(RequestCodes.HOST_GAME);
+        message.setData(timerMinutes);
+        message.send(webSocket);
+        message.onReply(res -> Platform.runLater(() -> messageLabel.setText("Code: " + res.getData())));
         return root;
     }
 

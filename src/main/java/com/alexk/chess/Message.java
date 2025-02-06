@@ -36,6 +36,7 @@ public class Message implements Serializable {
     private RequestCodes code;
     private String data;
     private Pioni pioni;
+    private String fen;
     private Consumer<Message> replyCallback;
     public static final Map<String, Message> pending = new ConcurrentHashMap<>();
 
@@ -55,7 +56,8 @@ public class Message implements Serializable {
     public String getMessageID() {
         return messageID;
     }
-
+    public void setFen(String fen) { this.fen = fen; }
+    public String getFen() { return fen; }
     public String getData() {
         return data;
     }
