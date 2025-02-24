@@ -57,4 +57,5 @@ public abstract class ChessEngine  {
 
         return fen.toString();
     }
+
 }

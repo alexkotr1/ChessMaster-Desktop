@@ -3,14 +3,14 @@ package com.alexk.chess;
 import com.alexk.chess.ChessEngine.ChessEngine;
 import com.alexk.chess.Pionia.Pioni;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import javafx.animation.TranslateTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.CacheHint;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
+import javafx.scene.control.*;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -31,6 +31,7 @@ import java.io.BufferedInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -39,6 +40,7 @@ public class ChessApplication extends Application implements WebSocketMessageLis
     private final HashMap<Pioni, ImageView> pieces = new HashMap<>();
     private double mouseX;
     private double mouseY;
+    private boolean vsAI = false;
     private final DropShadow whiteTurnEffect = new DropShadow();
     private final DropShadow blackTurnEffect = new DropShadow();
     private final HashMap<String, ImageView> possibleMoveIndicators = new HashMap<>();
@@ -51,6 +53,9 @@ public class ChessApplication extends Application implements WebSocketMessageLis
     private Label winnerLabel;
     private Button playAgain;
     private AnchorPane rightPanel;
+    private ImageView chessboard;
+    private AnchorPane leftPanel;
+    private TextArea chatArea;
     private Stage stage;
     private Proxy proxy;
     public ChessEngine chessEngine;
@@ -73,16 +78,17 @@ public class ChessApplication extends Application implements WebSocketMessageLis
     private void initialize() {
         if (!offlineMode) webSocket.setListener(this);
         root = new AnchorPane();
+        leftPanel = new AnchorPane();
         rightPanel = new AnchorPane();
         proxy = new Proxy(offlineMode, webSocket);
         chessEngine = proxy.chessEngine;
-        System.out.println("Offline Mode:" + offlineMode);
-        ImageView background = new ImageView(new Image("chessBoard.jpeg"));
-        background.setFitWidth(800);
-        background.setFitHeight(800);
-        background.setLayoutX(0);
-        background.setLayoutY(0);
-        background.setPreserveRatio(false);
+
+        chessboard = new ImageView(new Image("chessBoard.jpeg"));
+        chessboard.setFitWidth(800);
+        chessboard.setFitHeight(800);
+        chessboard.setLayoutX(vsAI ? 0 : 200);
+        chessboard.setLayoutY(0);
+        chessboard.setPreserveRatio(false);
 
         whiteTurnEffect.setColor(Color.web("#5BC0EB"));
         whiteTurnEffect.setRadius(1);
@@ -94,9 +100,86 @@ public class ChessApplication extends Application implements WebSocketMessageLis
 
         rightPanel.setPrefWidth(200);
         rightPanel.setPrefHeight(800);
-        rightPanel.setLayoutX(800);
+        rightPanel.setLayoutX(chessboard.getLayoutX() + chessboard.getFitWidth());
         rightPanel.setLayoutY(0);
         rightPanel.setStyle("-fx-background-color: linear-gradient(to bottom, #F0D09F, #3F2C0E);");
+
+
+        /* CHAT PANEL */
+        if (!vsAI) {
+
+            leftPanel.setPrefWidth(200);
+            leftPanel.setPrefHeight(800);
+            leftPanel.setLayoutX(0);
+            leftPanel.setLayoutY(0);
+            leftPanel.setStyle("-fx-background-color: linear-gradient(to bottom, #F0D09F, #3F2C0E);");
+
+            chatArea = new TextArea();
+            chatArea.setEditable(false);
+            chatArea.setWrapText(true);
+            chatArea.setPrefSize(200, 950);
+            chatArea.setStyle("-fx-background-color: transparent;"
+                    + "-fx-control-inner-background: transparent;"
+                    + "-fx-text-fill: white;"
+                    + "-fx-border-color: transparent;"
+                    + "-fx-background-radius: 0;"
+                    + "-fx-background-insets: 0;"
+                    + "-fx-focus-color: transparent;"
+                    + "-fx-faint-focus-color: transparent;"
+                    + "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.8), 2, 0.5, 0, 1);"
+                    + "-fx-font-weight: bold;");
+
+            ScrollPane scrollPane = new ScrollPane(chatArea);
+            scrollPane.setFitToWidth(true);
+            scrollPane.setPrefSize(200, 950);
+            scrollPane.setStyle("-fx-background-color: transparent;"
+                    + "-fx-border-color: transparent;"
+                    + "-fx-background-insets: 0;"
+                    + "-fx-padding: 0;");
+
+            String scrollPaneCSS =
+                    ".scroll-pane .viewport { -fx-background-color: transparent; }";
+            scrollPane.getStylesheets().add("data:text/css," + scrollPaneCSS);
+
+            TextField inputField = new TextField();
+            inputField.setPrefSize(200, 50);
+            inputField.setPromptText("Type a message...");
+            inputField.setStyle("-fx-background-color: rgba(255, 255, 255, 0.2);"
+                    + "-fx-text-fill: white;"
+                    + "-fx-prompt-text-fill: rgba(255, 255, 255, 0.5);"
+                    + "-fx-border-color: white;"
+                    + "-fx-border-radius: 5px;"
+                    + "-fx-background-radius: 5px;");
+
+            inputField.setOnAction(e -> {
+                String text = inputField.getText().trim();
+                if (!text.isEmpty()) {
+                    Message chatMessage = new Message();
+                    chatMessage.setCode(RequestCodes.CHAT_MESSAGE);
+                    chatMessage.setData(text);
+                    chatMessage.send(webSocket);
+                    inputField.clear();
+                }
+            });
+
+            VBox chatContainer = new VBox(scrollPane, inputField);
+            chatContainer.setSpacing(5);
+            chatContainer.setPrefSize(200, 1000);
+            chatContainer.setStyle("-fx-background-color: transparent;"
+                    + "-fx-border-color: transparent;"
+                    + "-fx-background-insets: 0;");
+
+            leftPanel.getChildren().add(chatContainer);
+
+            AnchorPane.setTopAnchor(chatContainer, 0.0);
+            AnchorPane.setLeftAnchor(chatContainer, 0.0);
+            AnchorPane.setRightAnchor(chatContainer, 0.0);
+            AnchorPane.setBottomAnchor(chatContainer, 0.0);
+        }
+
+        /*-----------------------------------------*/
+
+        /* CAPTURED PAWNS & TIMERS PANEL */
 
         whiteCapturedPawns = new VBox(10);
         whiteCapturedPawns.setPrefHeight(240);
@@ -223,14 +306,15 @@ public class ChessApplication extends Application implements WebSocketMessageLis
 
         rightPanel.getChildren().addAll(whiteCapturedPawns, blackCapturedPawns, whiteTimerLabel, blackTimerLabel, winnerLabel);
 
-        root.getChildren().addAll(background, rightPanel);
+        /* ------------------------------------------------------ */
 
+        root.getChildren().addAll(chessboard, leftPanel, rightPanel);
         ArrayList<Pioni> Pionia = chessEngine.getBoard().getPionia();
         for (Pioni p : Pionia) {
             addPiece(root, p);
         }
 
-        Scene scene = new Scene(root, 1000, 800);
+        Scene scene = new Scene(root, vsAI ? 1000 : 1200, 800);
         stage.setTitle("Chess Master");
         stage.setResizable(false);
         stage.setScene(scene);
@@ -409,14 +493,14 @@ public class ChessApplication extends Application implements WebSocketMessageLis
     private int[] getCoordinates(char x, int y) {
         int[] pos = blackMode ? chessEngine.getBoard().translateToBlackView(Utilities.char2Int(x), y) : new int[]{Utilities.char2Int(x), y};
         int[] coordinates = new int[2];
-        coordinates[0] = offBoundsEnd + Math.abs(pos[0] - 1) * tile + tile / 2;
+        coordinates[0] = (int) chessboard.getLayoutX() + offBoundsEnd + Math.abs(pos[0] - 1) * tile + tile / 2;
         coordinates[1] = offBoundsEnd + Math.abs(pos[1] - 8) * tile + tile / 2;
         return coordinates;
     }
 
     private int[] coordinatesToPosition(int x, int y) {
         int[] position = new int[2];
-        position[0] = Math.abs(x - offBoundsEnd) / tile + 1;
+        position[0] = Math.abs(x - offBoundsEnd - (int) chessboard.getLayoutX()) / tile + 1;
         position[1] = Math.abs(y - tile * 8) / tile + 1;
         return blackMode ? chessEngine.getBoard().translateToBlackView(position[0], position[1]) : position;
     }
@@ -669,12 +753,16 @@ public class ChessApplication extends Application implements WebSocketMessageLis
     public void setMinutesAllowed(int mins) {
         secondsAllowed = mins * 60;
     }
+    public void setVsAI(boolean vsAI) {
+        this.vsAI = vsAI;
+    }
 
     private void updateTimerLabel(Label label, int remainingTime) {
         int minutes = remainingTime / 60;
         int seconds = remainingTime % 60;
         label.setText(String.format("%02d:%02d", minutes, seconds));
     }
+
 
     private void toggleTimer() {
         if (chessEngine.getBoard().getWhiteTurn()){
@@ -694,47 +782,61 @@ public class ChessApplication extends Application implements WebSocketMessageLis
 
     @Override
     public void onMessageReceived(Message message) {
-        if (message.getCode() == RequestCodes.ENEMY_MOVE) {
-            chessEngine.refreshBoard(() -> updateAfterEnemyMove(Boolean.parseBoolean(message.getData())));
-        } else if (message.getCode() == RequestCodes.KING_CHECK_BLACK) {
-            boolean isChecked = Boolean.parseBoolean(message.getData());
-            kingChecked[1] = isChecked ? 1 : 0;
-            Platform.runLater(() -> setKingCheckEffect(false, isChecked));
-        } else if (message.getCode() == RequestCodes.KING_CHECK_WHITE) {
-            boolean isChecked = Boolean.parseBoolean(message.getData());
-            kingChecked[0] = isChecked ? 1 : 0;
-            Platform.runLater(() -> setKingCheckEffect(true, isChecked));
-        } else if (message.getCode() == RequestCodes.PLAY_AGAIN_ACCEPTED) {
-            Platform.runLater(() -> {
-                try {
-                    Stage newStage = new Stage();
-                    stage.close();
-                    ChessApplication chessApp = new ChessApplication();
-                    chessApp.setMode(false, !blackMode);
-                    chessApp.setWebSocket(webSocket);
-                    chessApp.setMinutesAllowed(secondsAllowed / 60);
-                    chessApp.start(newStage);
-                } catch (Exception e) {
-                    System.err.println("Error restarting application: " + e.getMessage());
-                    e.printStackTrace();
-                }
-            });
-        }
-        else if (message.getCode() == RequestCodes.TIMER) {
-            try {
-                long[] times = Message.mapper.readValue(message.getData(), long[].class);
-                overrideTimersFromServer(times[0], times[1]);
-            } catch (JsonProcessingException e) {
-                System.err.println("Failed to parse TIMER message: " + e.getMessage());
+        switch (message.getCode()){
+            case RequestCodes.ENEMY_MOVE -> chessEngine.refreshBoard(() -> updateAfterEnemyMove(Boolean.parseBoolean(message.getData())));
+            case RequestCodes.KING_CHECK_BLACK -> {
+                boolean isChecked = Boolean.parseBoolean(message.getData());
+                kingChecked[1] = isChecked ? 1 : 0;
+                Platform.runLater(() -> setKingCheckEffect(false, isChecked));
             }
-        } else if (message.getCode() == RequestCodes.REQUEST_UPGRADE){
-            boolean forWhite = Boolean.parseBoolean(message.getData());
-            Platform.runLater(()->selectUpgrade(forWhite).thenAccept(str->{
-                Message reply = new Message();
-                reply.setCode(RequestCodes.REQUEST_UPGRADE_RESULT);
-                reply.setData(str);
-                reply.send(webSocket,message);
-            }));
+            case RequestCodes.KING_CHECK_WHITE -> {
+                boolean isChecked = Boolean.parseBoolean(message.getData());
+                kingChecked[0] = isChecked ? 1 : 0;
+                Platform.runLater(() -> setKingCheckEffect(true, isChecked));
+            }
+            case RequestCodes.PLAY_AGAIN_ACCEPTED -> {
+                Platform.runLater(() -> {
+                    try {
+                        Stage newStage = new Stage();
+                        stage.close();
+                        ChessApplication chessApp = new ChessApplication();
+                        chessApp.setMode(false, !blackMode);
+                        chessApp.setWebSocket(webSocket);
+                        chessApp.setVsAI(vsAI);
+                        chessApp.setMinutesAllowed(secondsAllowed / 60);
+                        chessApp.start(newStage);
+                    } catch (Exception e) {
+                        System.err.println("Error restarting application: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                });
+            }
+            case RequestCodes.TIMER -> {
+                try {
+                    long[] times = Message.mapper.readValue(message.getData(), long[].class);
+                    overrideTimersFromServer(times[0], times[1]);
+                } catch (JsonProcessingException e) {
+                    System.err.println("Failed to parse TIMER message: " + e.getMessage());
+                }
+            }
+            case RequestCodes.REQUEST_UPGRADE -> {
+                boolean forWhite = Boolean.parseBoolean(message.getData());
+                Platform.runLater(()->selectUpgrade(forWhite).thenAccept(str->{
+                    Message reply = new Message();
+                    reply.setCode(RequestCodes.REQUEST_UPGRADE_RESULT);
+                    reply.setData(str);
+                    reply.send(webSocket,message);
+                }));
+            }
+            case RequestCodes.CHAT_MESSAGE_NOTIFICATION -> {
+                ObjectMapper mapper = new ObjectMapper();
+                try {
+                    Map<String, Object> data = mapper.readValue(message.getData(),Map.class);
+                    chatArea.appendText(data.get("sender") + ": " + data.get("text") + "\n");
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         }
     }
 }

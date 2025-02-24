@@ -16,7 +16,7 @@ public class WebSocket {
         this.listener = listener;
         try {
             WebSocketContainer container = ContainerProvider.getWebSocketContainer();
-            session = container.connectToServer(this, URI.create("ws://localhost:8025/chat"));
+            session = container.connectToServer(this, URI.create("wss://ws.chessmaster.gr/"));
         } catch (Exception e) {
             System.err.println("WebSocket initialization error: " + e.getMessage());
         }
