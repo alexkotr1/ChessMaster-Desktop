@@ -1,20 +1,52 @@
-package com.alexk.chess;
+package com.alexk.chess.Pionia;
 
+import com.alexk.chess.ChessBoard.ChessBoard;
+import com.alexk.chess.Serializers.PioniKeyDeserializer;
+import com.alexk.chess.Utilities;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
+import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Objects;
+import java.util.UUID;
+@JsonTypeInfo(
+        use = JsonTypeInfo.Id.NAME,
+        include = JsonTypeInfo.As.PROPERTY,
+        property = "type"
+)
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = Stratiotis.class, name = "Stratiotis"),
+        @JsonSubTypes.Type(value = Pyrgos.class, name = "Pyrgos"),
+        @JsonSubTypes.Type(value = Alogo.class, name = "Alogo"),
+        @JsonSubTypes.Type(value = Stratigos.class, name = "Stratigos"),
+        @JsonSubTypes.Type(value = Vasilissa.class, name = "Vasilissa"),
+        @JsonSubTypes.Type(value = Vasilias.class, name = "Vasilias")
+})
 
-public abstract class Pioni {
-    protected boolean isWhite;
-    protected String type;
-    protected int[] position = new int[2];
-    protected ChessBoard chessBoard;
+@JsonDeserialize(keyUsing = PioniKeyDeserializer.class)
+public abstract class Pioni implements Serializable {
+    private boolean isWhite;
+    private String type;
+    private final int[] position = new int[2];
+    private ChessBoard chessBoard;
+    private String id;
     private String imagePath;
     private boolean captured;
-    public Pioni(Boolean isWhite, ChessBoard chessBoard, char initialX, int initialY) {
+    private Boolean moved;
+    private Boolean kingSide;
+    public Pioni(Boolean isWhite, ChessBoard chessBoard, char initialX, int initialY, String id, Boolean captured, Boolean moved, Boolean kingSide) {
+        this.id = id == null ? UUID.randomUUID().toString() : id;
         position[0] = Utilities.char2Int(initialX);
         position[1] = initialY;
         this.type = this.getClass().getSimpleName();
         this.isWhite = isWhite;
         this.chessBoard = chessBoard;
+        this.captured = captured;
+        this.moved = moved;
+        this.kingSide = kingSide;
         switch (this.type){
             case "Alogo":
                 this.imagePath = this.isWhite ? "white knight.png" : "black knight.png";
@@ -98,11 +130,15 @@ public abstract class Pioni {
         position[0] = Utilities.char2Int(x);
         position[1] = y;
     }
+    public void setIsWhite(boolean isWhite){
+        this.isWhite = isWhite;
+    }
+    public boolean getIsWhite(){
+        return this.isWhite;
+    }
+
     public int[] getPosition(){
         return position;
-    }
-    public void setXPos(int x){
-        position[0] = x;
     }
     public void setXPos(char x){
         position[0] = Utilities.char2Int(x);
@@ -116,24 +152,32 @@ public abstract class Pioni {
     public int getYPos(){
         return position[1];
     }
-    public void setIsWhite(boolean isWhite){
-        this.isWhite = isWhite;
-    }
-    public boolean getIsWhite(){
-        return isWhite;
-    }
+
     public void setChessBoard(ChessBoard chessBoard){ this.chessBoard = chessBoard; }
     public ChessBoard getChessBoard(){ return chessBoard; }
+
     public void setType(String type){
         this.type = type;
     }
     public String getType(){
         return type;
     }
+
     public void setImagePath(String imagePath){ this.imagePath = imagePath; }
     public String getImagePath(){ return imagePath; }
+
     public void setCaptured(Boolean captured){ this.captured = captured; }
     public Boolean getCaptured(){ return captured; }
+
+    public String getID(){ return this.id; }
+    public void setId(String ID) { this.id = ID;}
+
+    public void setMoved(Boolean moved){ this.moved = moved; }
+    public Boolean getMoved(){ return moved != null && moved;  }
+
+    public void setKingSide(Boolean kingSide){ this.kingSide = kingSide; }
+    public Boolean getKingSide(){ return kingSide != null && kingSide; }
+
     public static void printRoute(ArrayList<int[]> route){
         if (route == null || route.isEmpty()) {
             System.out.println("Null or empty route");
@@ -143,21 +187,34 @@ public abstract class Pioni {
             System.out.printf("%d:[%c,%s]%n",i,Utilities.int2Char(route.get(i)[0]),route.get(i)[1]);
         }
     }
+    @JsonIgnore
     @Override
     public String toString(){
-        return String.format("Type: %s Position: [%c,%d]", type, Utilities.int2Char(position[0]), position[1]);
+        return String.format("Type: %s Position: [%c,%d] ID: %s", type, Utilities.int2Char(position[0]), position[1], id);
     }
     @Override
-    protected Pioni clone() {
+    public Pioni clone() {
         try {
             Pioni cloned = this.getClass()
-                    .getConstructor(Boolean.class, ChessBoard.class, char.class, int.class)
-                    .newInstance(this.isWhite, null, Utilities.int2Char(this.position[0]), this.position[1]);
-            cloned.setCaptured(this.getCaptured());
+                    .getConstructor(Boolean.class, ChessBoard.class, char.class, int.class, String.class, Boolean.class, Boolean.class, Boolean.class)
+                    .newInstance(this.getIsWhite(), null, Utilities.int2Char(this.getPosition()[0]), this.getPosition()[1], this.getID(), this.getCaptured(), this.getMoved(), this.getKingSide());
             cloned.setImagePath(this.getImagePath());
             return cloned;
         } catch (Exception e) {
             throw new AssertionError("Clone operation failed", e);
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Pioni pioni = (Pioni) o;
+        return Objects.equals(id, pioni.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
     }
 }
