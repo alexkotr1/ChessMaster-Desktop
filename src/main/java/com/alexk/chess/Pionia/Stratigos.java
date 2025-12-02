@@ -1,11 +1,14 @@
-package com.alexk.chess;
+package com.alexk.chess.Pionia;
+
+import com.alexk.chess.ChessBoard;
+import com.alexk.chess.Utilities;
 
 import java.util.ArrayList;
 
-public class Pyrgos extends Pioni {
-private boolean moved;
+public class Stratigos extends Pioni {
 
-    public Pyrgos(Boolean isWhite, ChessBoard chessBoard, char initialX, int initialY) {
+
+    public Stratigos(Boolean isWhite, ChessBoard chessBoard, char initialX, int initialY) {
         super(isWhite, chessBoard, initialX, initialY);
     }
 
@@ -19,8 +22,5 @@ private boolean moved;
         return (route != null && !route.isEmpty() && route.getLast()[0] == destX && route.getLast()[1] == y) && (this.chessBoard.getPioniAt(x,y) == null || this.chessBoard.getPioniAt(x,y).getIsWhite() != getIsWhite());
 
     }
-
-    public void setMoved(boolean moved) { this.moved = moved; }
-    public boolean getMoved() { return moved; }
 
 }

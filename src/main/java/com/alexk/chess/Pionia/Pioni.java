@@ -1,12 +1,15 @@
-package com.alexk.chess;
+package com.alexk.chess.Pionia;
+
+import com.alexk.chess.ChessBoard;
+import com.alexk.chess.Utilities;
 
 import java.util.ArrayList;
 
 public abstract class Pioni {
-    protected boolean isWhite;
-    protected String type;
-    protected int[] position = new int[2];
-    protected ChessBoard chessBoard;
+    public boolean isWhite;
+    public String type;
+    public int[] position = new int[2];
+    public ChessBoard chessBoard;
     private String imagePath;
     private boolean captured;
     public Pioni(Boolean isWhite, ChessBoard chessBoard, char initialX, int initialY) {
@@ -148,7 +151,7 @@ public abstract class Pioni {
         return String.format("Type: %s Position: [%c,%d]", type, Utilities.int2Char(position[0]), position[1]);
     }
     @Override
-    protected Pioni clone() {
+    public Pioni clone() {
         try {
             Pioni cloned = this.getClass()
                     .getConstructor(Boolean.class, ChessBoard.class, char.class, int.class)

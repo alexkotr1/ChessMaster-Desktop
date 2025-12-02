@@ -1,5 +1,6 @@
 package com.alexk.chess;
 
+import com.alexk.chess.Pionia.Pioni;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -28,7 +29,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
-
+import static com.alexk.chess.ChessEngine.Result;
 
 public class ChessApplication extends Application {
     private final HashMap<Pioni, ImageView> pieces = new HashMap<>();
@@ -50,13 +51,20 @@ public class ChessApplication extends Application {
     private boolean blackTimerRunning = false;
     private long blackTimerStartTime = 0;
     private long blackPauseTime = 0;
-    private final int minutesAllowed = 600;
+    private int totalTime = 600;
+
+    private long whiteTimeOffset = 0;
+    private long blackTimeOffset = 0;
+    // <<<
+
     private Label winnerLabel;
-    private Button playAgain;
+    private Button mainMenuButton;
     private AnchorPane rightPanel;
     private Stage stage;
     public ChessApplication() {}
-
+    public ChessApplication(ChessEngine chessEngine) {
+        this.chessEngine = chessEngine;
+    }
 
     @Override
     public void start(Stage stage) {
@@ -134,19 +142,14 @@ public class ChessApplication extends Application {
         winnerLabel = new Label("");
         winnerLabel.setVisible(false);
 
-        playAgain = new Button("Play Again!");
-        playAgain.setFont(Font.font("Arial", FontWeight.BOLD, 20));
-        playAgain.setStyle("-fx-background-color: linear-gradient(to bottom, #F0D09F, #3F2C0E);");
-        playAgain.setTextFill(Color.web("#F0D09F"));
-        playAgain.setVisible(false);
-        playAgain.setOnAction(event -> {
-            whiteTimerRunning = false;
-            whiteTimerStartTime = 0;
-            whitePauseTime = 0;
-            blackTimerRunning = false;
-            blackTimerStartTime = 0;
-            blackPauseTime = 0;
-            initialize();
+        mainMenuButton = new Button("Main Menu");
+        mainMenuButton.setFont(Font.font("Arial", FontWeight.BOLD, 20));
+        mainMenuButton.setStyle("-fx-background-color: linear-gradient(to bottom, #F0D09F, #3F2C0E);");
+        mainMenuButton.setTextFill(Color.web("#F0D09F"));
+        mainMenuButton.setVisible(false);
+        mainMenuButton.setOnAction(event -> {
+            MainMenu mainMenu = new MainMenu();
+            mainMenu.start(stage);
         });
 
 
@@ -169,11 +172,12 @@ public class ChessApplication extends Application {
             @Override
             public void handle(long now) {
                 if (whiteTimerRunning) {
-                    long elapsedTime = (now - whiteTimerStartTime + whitePauseTime) / 1_000_000_000;
-                    long remainingTime = minutesAllowed - elapsedTime;
+                    long elapsedTime = (now - whiteTimerStartTime + whitePauseTime) / 1_000_000_000L;
+                    long remainingTime = totalTime - elapsedTime + whiteTimeOffset;
+                    chessEngine.getBoard().setWhiteTimeRemaining(remainingTime);
                     if (remainingTime <= 0) {
-                        chessEngine.setGameEnded(true);
-                        showWinScreen(false);
+                        chessEngine.setWinner(ChessEngine.Result.Black);
+                        showWinScreen(chessEngine.getWinner());
                     }
                     long minutes = remainingTime / 60;
                     long seconds = remainingTime % 60;
@@ -199,11 +203,12 @@ public class ChessApplication extends Application {
             @Override
             public void handle(long now) {
                 if (blackTimerRunning) {
-                    long elapsedTime = (now - blackTimerStartTime + blackPauseTime) / 1_000_000_000;
-                    long remainingTime = minutesAllowed - elapsedTime;
+                    long elapsedTime = (now - blackTimerStartTime + blackPauseTime) / 1_000_000_000L;
+                    long remainingTime = totalTime - elapsedTime + blackTimeOffset;
+                    chessEngine.getBoard().setBlackTimeRemaining(remainingTime);
                     if (remainingTime <= 0) {
-                        chessEngine.setGameEnded(true);
-                        showWinScreen(true);
+                        chessEngine.setWinner(Result.White);
+                        showWinScreen(chessEngine.getWinner());
                     }
                     long minutes = remainingTime / 60;
                     long seconds = remainingTime % 60;
@@ -215,9 +220,18 @@ public class ChessApplication extends Application {
         rightPanel.getChildren().addAll(whiteCapturedPawns,blackCapturedPawns,whiteTimerlabel,blackTimerLabel,winnerLabel);
 
         root.getChildren().addAll(background, rightPanel);
+        if (chessEngine == null){
+            chessEngine = new ChessEngine(null);
+            chessEngine.playChess();
+        } else {
+            setWhiteRemainingTime(chessEngine.getBoard().getWhiteTimeRemaining());
+            setBlackRemainingTime(chessEngine.getBoard().getBlackTimeRemaining());
+            if (!chessEngine.getWinner().equals(ChessEngine.Result.InProgress) ){
+                System.out.println(chessEngine.getWinner());
+                showWinScreen(chessEngine.getWinner());
+            }
+        }
 
-        chessEngine = new ChessEngine();
-        chessEngine.playChess();
 
         ArrayList<Pioni> Pionia = chessEngine.chessBoard.getPionia();
         for (Pioni p : Pionia) {
@@ -267,7 +281,7 @@ public class ChessApplication extends Application {
         });
 
         piece.setOnDragDetected(c -> {
-            if (chessEngine.chessBoard.getWhiteTurn() != p.getIsWhite() || chessEngine.getGameEnded()) return;
+            if (chessEngine.chessBoard.getWhiteTurn() != p.getIsWhite() || !chessEngine.getWinner().equals(Result.InProgress)) return;
             HashMap<Pioni,ArrayList<int[]>> legalMovesWhenKingThreatened = chessEngine.kingCheckMate(p.isWhite);
             if (legalMovesWhenKingThreatened != null && !legalMovesWhenKingThreatened.isEmpty()){
                 if (legalMovesWhenKingThreatened.get(p) == null) return;
@@ -285,7 +299,7 @@ public class ChessApplication extends Application {
         });
 
         piece.setOnMouseDragged(event -> {
-            if (chessEngine.chessBoard.getWhiteTurn() != p.getIsWhite() || chessEngine.getGameEnded()) return;
+            if (chessEngine.chessBoard.getWhiteTurn() != p.getIsWhite() || !chessEngine.getWinner().equals(Result.InProgress)) return;
             piece.setEffect(null);
             piece.setLayoutX(event.getSceneX() - mouseX);
             piece.setLayoutY(event.getSceneY() - mouseY);
@@ -295,7 +309,7 @@ public class ChessApplication extends Application {
             for (ImageView indicator : possibleMoveIndicators.values()) {
                 indicator.setVisible(false);
             }
-            if (chessEngine.chessBoard.getWhiteTurn() != p.getIsWhite() || chessEngine.getGameEnded()) return;
+            if (chessEngine.chessBoard.getWhiteTurn() != p.getIsWhite() || !chessEngine.getWinner().equals(Result.InProgress)) return;
             int[] position = coordinatesToPosition((int) (event.getSceneX() - mouseX), (int) (event.getSceneY() - mouseY));
             char posX = Utilities.int2Char(position[0]);
             int posY = position[1];
@@ -333,8 +347,8 @@ public class ChessApplication extends Application {
                 }
             }
 
-                updateCapturedPieces();
-               if (p.type.equals("Stratiotis") && ((p.getIsWhite() && p.getYPos() == 8) || (!p.getIsWhite() && p.getYPos() == 1))) {
+            updateCapturedPieces();
+            if (p.type.equals("Stratiotis") && ((p.getIsWhite() && p.getYPos() == 8) || (!p.getIsWhite() && p.getYPos() == 1))) {
                 selectUpgrade(p.getIsWhite()).thenAccept(selection ->{
                     Pioni upgraded = chessEngine.upgradePioni(p,selection);
                     if (upgraded != null) {
@@ -402,10 +416,10 @@ public class ChessApplication extends Application {
             setKingCheckEffect(!p.getIsWhite());
             HashMap<Pioni, ArrayList<int[]>> legalMovesWhenEnemyKingThreatened = chessEngine.kingCheckMate(!p.getIsWhite());
             if (legalMovesWhenEnemyKingThreatened == null || legalMovesWhenEnemyKingThreatened.isEmpty()) {
-                showWinScreen(p.getIsWhite());
-                chessEngine.setGameEnded(true);
+                showWinScreen(p.getIsWhite() ? Result.White : Result.Black);
+                chessEngine.setWinner(p.getIsWhite() ? Result.White : Result.Black);
             }
-        } else if (chessEngine.stalemateCheck(!p.getIsWhite()) || chessEngine.chessBoard.getMovesRemaining() == 0) showWinScreen(null);
+        } else if (chessEngine.stalemateCheck(!p.getIsWhite()) || chessEngine.chessBoard.getMovesRemaining() == 0) showWinScreen(Result.Tie);
         System.out.println(chessEngine.chessBoard.getMovesRemaining());
     }
 
@@ -428,19 +442,22 @@ public class ChessApplication extends Application {
         position[1] = Math.abs(y - tile*8) / tile + 1;
         return position;
     }
-    private void showWinScreen(Boolean winner) {
+    private void showWinScreen(Result winner) {
         String winnerText;
         String textColor;
 
-        if (winner == null) {
+        if (winner.equals(Result.Tie)) {
             winnerText = "It's a Tie!";
             textColor = "gold";
-        } else if (winner) {
+        } else if (winner.equals(Result.White)) {
             winnerText = "White Wins!";
             textColor = "white";
-        } else {
+        } else if (winner.equals(Result.Black)) {
             winnerText = "Black Wins!";
             textColor = "black";
+        } else {
+            winnerText = "Error!";
+            textColor = "red";
         }
 
         winnerLabel.setText(winnerText);
@@ -452,14 +469,14 @@ public class ChessApplication extends Application {
         winnerLabel.setVisible(true);
 
         rightPanel.getChildren().clear();
-        rightPanel.getChildren().addAll(winnerLabel,playAgain);
+        rightPanel.getChildren().addAll(winnerLabel, mainMenuButton);
 
-        playAgain.setVisible(true);
+        mainMenuButton.setVisible(true);
         Platform.runLater(() -> {
             winnerLabel.setLayoutX((rightPanel.getPrefWidth() - winnerLabel.getWidth()) / 2);
             winnerLabel.setLayoutY((rightPanel.getPrefHeight() - winnerLabel.getHeight()) / 2);
-            playAgain.setLayoutX((rightPanel.getPrefWidth() - playAgain.getWidth()) / 2);
-            playAgain.setLayoutY(winnerLabel.getLayoutY() + winnerLabel.getHeight() + 30);
+            mainMenuButton.setLayoutX((rightPanel.getPrefWidth() - mainMenuButton.getWidth()) / 2);
+            mainMenuButton.setLayoutY(winnerLabel.getLayoutY() + winnerLabel.getHeight() + 30);
         });
     }
 
@@ -547,6 +564,32 @@ public class ChessApplication extends Application {
             whiteTimerRunning = true;
             blackPauseTime += System.nanoTime() - blackTimerStartTime;
             blackTimerRunning = false;
+        }
+    }
+
+    public void setWhiteRemainingTime(long seconds) {
+        long now = System.nanoTime();
+        long elapsedTime = (whiteTimerStartTime == 0L && whitePauseTime == 0L)
+                ? 0
+                : (now - whiteTimerStartTime + whitePauseTime) / 1_000_000_000L;
+        long baseRemaining = totalTime - elapsedTime;
+        whiteTimeOffset = seconds - baseRemaining;
+
+        if (chessEngine != null && chessEngine.getBoard() != null) {
+            chessEngine.getBoard().setWhiteTimeRemaining(seconds);
+        }
+    }
+
+    public void setBlackRemainingTime(long seconds) {
+        long now = System.nanoTime();
+        long elapsedTime = (blackTimerStartTime == 0L && blackPauseTime == 0L)
+                ? 0
+                : (now - blackTimerStartTime + blackPauseTime) / 1_000_000_000L;
+        long baseRemaining = totalTime - elapsedTime;
+        blackTimeOffset = seconds - baseRemaining;
+
+        if (chessEngine != null && chessEngine.getBoard() != null) {
+            chessEngine.getBoard().setBlackTimeRemaining(seconds);
         }
     }
 

@@ -1,4 +1,7 @@
-package com.alexk.chess;
+package com.alexk.chess.Pionia;
+
+import com.alexk.chess.ChessBoard;
+import com.alexk.chess.Utilities;
 
 import java.util.Arrays;
 

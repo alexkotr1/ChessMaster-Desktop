@@ -1,11 +1,12 @@
-package com.alexk.chess;
+package com.alexk.chess.Pionia;
+
+import com.alexk.chess.ChessBoard;
+import com.alexk.chess.Utilities;
 
 import java.util.ArrayList;
 
-public class Stratigos extends Pioni {
-
-
-    public Stratigos(Boolean isWhite, ChessBoard chessBoard, char initialX, int initialY) {
+public class Vasilissa extends Pioni {
+    public Vasilissa(Boolean isWhite, ChessBoard chessBoard, char initialX, int initialY) {
         super(isWhite, chessBoard, initialX, initialY);
     }
 
@@ -17,7 +18,5 @@ public class Stratigos extends Pioni {
         int currentY = getYPos();
         ArrayList<int[]> route = getRoute(currentX,currentY,destX,y);
         return (route != null && !route.isEmpty() && route.getLast()[0] == destX && route.getLast()[1] == y) && (this.chessBoard.getPioniAt(x,y) == null || this.chessBoard.getPioniAt(x,y).getIsWhite() != getIsWhite());
-
     }
-
 }

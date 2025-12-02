@@ -1,24 +1,45 @@
 package com.alexk.chess;
 
+import com.alexk.chess.Pionia.*;
+
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class ChessEngine {
-    protected final ChessBoard chessBoard = new ChessBoard();
-    private boolean gameEnded = false;
+    protected ChessBoard chessBoard;
+    public enum Result { White, Black, Tie, InProgress };
+    private Result winner;
+    private final UUID uuid;
     ArrayList<int[]> allPositions = new ArrayList<>();
-    public ChessEngine() {
+    public ChessEngine(UUID uuid) {
         for (int x = 1;x<=8;x++) {
             for (int y = 1; y <= 8; y++) {
                 allPositions.add(new int[]{x, y});
             }
         }
+        this.uuid = uuid == null ? UUID.randomUUID() : uuid;
     }
     public void playChess(){
+        chessBoard = new ChessBoard();
         chessBoard.loadBoard();
         chessBoard.printBoard();
     }
+    public void setChessBoard(ChessBoard chessBoard) {
+        this.chessBoard = chessBoard;
+    }
+
+    public static ChessEngine fromGameDetails(GameDetails gameDetails) {
+        ChessEngine chessEngine = new ChessEngine(gameDetails.getUUID());
+        chessEngine.setChessBoard(ChessBoard.fromFEN(gameDetails.getFen()));
+        chessEngine.getBoard().setWhiteTimeRemaining(gameDetails.getWhiteTimeRemaining());
+        chessEngine.getBoard().setBlackTimeRemaining(gameDetails.getBlackTimeRemaining());
+        chessEngine.setWinner(gameDetails.getWinner());
+        return chessEngine;
+    }
+
     public boolean nextMove(char xOrig, int yOrig, char xDest, int yDest){
         Pioni p = chessBoard.getPioniAt(xOrig,yOrig);
         Pioni pioniAtDest = chessBoard.getPioniAt(xDest,yDest);
@@ -44,6 +65,9 @@ public class ChessEngine {
         }
         chessBoard.move(xOrig,yOrig,xDest,yDest);
         chessBoard.printBoard();
+        GameDetails details = new GameDetails(uuid, toFen(), chessBoard.getWhiteTurn(), chessBoard.getMovesRemaining(), getBoard().getWhiteTimeRemaining(), getBoard().getBlackTimeRemaining(), LocalDateTime.now(),getWinner());
+        details.saveToFile("./games/" + uuid + ".game");
+        System.out.println(toFen());
         return true;
     }
     public Pioni upgradePioni(Pioni p,String type){
@@ -122,6 +146,55 @@ public class ChessEngine {
         testChessBoard.move(p.getXPos(), p.getYPos(), Utilities.int2Char(dest[0]), dest[1]);
         return ChessEngine.checkKingMat(testChessBoard,p.isWhite);
     }
-    public void setGameEnded(boolean gameEnded) { this.gameEnded = gameEnded; }
-    public boolean getGameEnded() { return gameEnded;}
+    public ChessBoard getBoard(){
+        return chessBoard;
+    }
+
+    public String toFen(){
+        StringBuilder fen = new StringBuilder();
+        for (int y = 8;y>=1;y--){
+            int emptyCounter = 0;
+            for (int x = 1;x<=8;x++){
+                Pioni pioni = getBoard().getPioniAt(Utilities.int2Char(x),y);
+                if (pioni != null) {
+                    if (emptyCounter != 0) fen.append(emptyCounter);
+                    fen.append(pioni.print());
+                    emptyCounter = 0;
+                }
+                else emptyCounter++;
+                if (x == 8) fen.append(emptyCounter == 0 ? "" : emptyCounter).append(y != 1 ? "/" : "");
+            }
+        }
+        fen.append(" ").append(getBoard().getWhiteTurn() ? "w" : "b").append(" ");
+        boolean whiteKingSideRights = getBoard().castlingRights(true,true);
+        boolean whiteQueenSideRights = getBoard().castlingRights(true,false);
+        boolean blackKingSideRights = getBoard().castlingRights(false,true);
+        boolean blackQueenSideRights = getBoard().castlingRights(false,false);
+
+        if (whiteKingSideRights) fen.append("K");
+        if (whiteQueenSideRights) fen.append("Q");
+        if (blackKingSideRights) fen.append("k");
+        if (blackQueenSideRights) fen.append("q");
+
+        if (!whiteKingSideRights && !whiteQueenSideRights && !blackKingSideRights && !blackQueenSideRights) fen.append("-");
+
+        fen
+                .append(" ")
+                .append("-")
+                .append(" ")
+                .append(getBoard().getMovesRemaining())
+                .append(" ")
+                .append("50");
+
+        return fen.toString();
+    }
+    public void setWinner(Result winner){
+        this.winner = winner;
+        GameDetails details = new GameDetails(uuid, toFen(), chessBoard.getWhiteTurn(), getBoard().getMovesRemaining(), getBoard().getWhiteTimeRemaining(), getBoard().getBlackTimeRemaining(), LocalDateTime.now(),getWinner());
+        details.saveToFile("./games/" + uuid + ".game");
+    }
+    public Result getWinner(){
+        return winner != null ? winner : Result.InProgress;
+    }
+
 }
