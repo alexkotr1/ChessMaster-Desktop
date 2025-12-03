@@ -20,19 +20,53 @@ import java.nio.file.Paths;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Main menu application for the Chess Game.
+ * <p>
+ * This class provides the entry point for the chess application with a graphical
+ * user interface for starting new games, loading saved games, and viewing match history.
+ * It allows configuration of game settings such as time control.
+ * </p>
+ *
+ * @author Alex K
+ * @version 1.0
+ * @see ChessApplication
+ * @see ChessEngine
+ */
 public class MainMenu extends Application {
 
+    /**
+     * Slider for selecting time per move.
+     */
     private Slider timeSlider;
+
+    /**
+     * Checkbox for enabling/disabling time limits.
+     */
     private CheckBox noLimitCheckBox;
+
+    /**
+     * Label displaying the current time value.
+     */
     private Label timeValueLabel;
+
+    /**
+     * Reference to the primary stage.
+     */
     private Stage stage;
 
+    /**
+     * The main entry point for the JavaFX application.
+     * <p>
+     * Sets up the main menu interface with game options and controls.
+     * </p>
+     *
+     * @param primaryStage the primary stage for this application
+     */
     @Override
     public void start(Stage primaryStage) {
-        // Root background
         this.stage = primaryStage;
         StackPane root = new StackPane();
         root.setPadding(new Insets(40));
@@ -41,7 +75,7 @@ public class MainMenu extends Application {
                         "-fx-font-family: 'Segoe UI', 'System';"
         );
 
-        // Card container
+        // Main card container
         VBox card = new VBox(25);
         card.setAlignment(Pos.CENTER);
         card.setPadding(new Insets(30, 40, 40, 40));
@@ -55,7 +89,7 @@ public class MainMenu extends Application {
 
         card.setEffect(new DropShadow(20, Color.color(0, 0, 0, 0.6)));
 
-        // Title
+        // Title section
         Label title = new Label("ChessMaster");
         title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 32));
         title.setTextFill(Color.web("#3f2c0e"));
@@ -70,32 +104,27 @@ public class MainMenu extends Application {
         // Time control section
         VBox timeBox = createTimeControlSection();
 
-        // Menu buttons
+        // Action buttons
         Button newGameBtn = createMainButton("Start New Game");
         Button loadGameBtn = createMainButton("Load Saved Game");
         Button historyBtn = createMainButton("Check Match History");
 
-        // --- Handlers ---
-
+        // Button actions
         newGameBtn.setOnAction(e -> {
             boolean noLimit = noLimitCheckBox.isSelected();
-            int timePerMove = noLimit ? 0 : (int) timeSlider.getValue();
-
-            System.out.println("[MainMenu] NEW game. Time per move = "
-                    + (noLimit ? "NO LIMIT" : timePerMove + " sec"));
+            int totalSecondsForMove = noLimit ? 0 : (int) timeSlider.getValue();
             ChessApplication chessApp = new ChessApplication();
+            chessApp.setTotalTime(totalSecondsForMove);
             chessApp.start(stage);
         });
 
         loadGameBtn.setOnAction(e -> showLoadGameDialog(primaryStage));
-
         historyBtn.setOnAction(e -> showHistoryDialog(primaryStage));
 
         VBox buttonBox = new VBox(12, newGameBtn, loadGameBtn, historyBtn);
         buttonBox.setAlignment(Pos.CENTER);
 
         card.getChildren().addAll(titleBox, timeBox, buttonBox);
-
         root.getChildren().add(card);
 
         Scene scene = new Scene(root, 800, 600);
@@ -106,14 +135,17 @@ public class MainMenu extends Application {
         primaryStage.show();
     }
 
-    // ================== Time Control UI ==================
-
+    /**
+     * Creates the time control section with slider and checkbox.
+     *
+     * @return a VBox containing the time control UI elements
+     */
     private VBox createTimeControlSection() {
-        Label sectionTitle = new Label("Time Per Move");
+        Label sectionTitle = new Label("Time Settings");
         sectionTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
         sectionTitle.setTextFill(Color.web("#3f2c0e"));
 
-        Label description = new Label("Choose how much time each player has for every move.");
+        Label description = new Label("Choose how much time each player has.");
         description.setFont(Font.font("Segoe UI", 13));
         description.setTextFill(Color.web("#7a5a26"));
 
@@ -125,14 +157,14 @@ public class MainMenu extends Application {
         timeSlider.setBlockIncrement(5);
         timeSlider.setPrefWidth(260);
 
-        timeValueLabel = new Label("60 sec / move");
+        timeValueLabel = new Label("60 seconds");
         timeValueLabel.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 13));
         timeValueLabel.setTextFill(Color.web("#3f2c0e"));
 
         timeSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
             if (!noLimitCheckBox.isSelected()) {
                 int seconds = newVal.intValue();
-                timeValueLabel.setText(seconds + " sec / move");
+                timeValueLabel.setText(seconds + " second" + (seconds == 1 ? "" : "s"));
             }
         });
 
@@ -145,7 +177,7 @@ public class MainMenu extends Application {
             if (isSelected) {
                 timeValueLabel.setText("No limit");
             } else {
-                timeValueLabel.setText((int) timeSlider.getValue() + " sec / move");
+                timeValueLabel.setText((int) timeSlider.getValue() + " second" + ((int) timeSlider.getValue() == 1 ? "" : "s"));
             }
         });
 
@@ -162,6 +194,12 @@ public class MainMenu extends Application {
         return timeBox;
     }
 
+    /**
+     * Creates a styled button for the main menu.
+     *
+     * @param text the button text
+     * @return a styled Button instance
+     */
     private Button createMainButton(String text) {
         Button btn = new Button(text);
         btn.setPrefWidth(260);
@@ -171,6 +209,11 @@ public class MainMenu extends Application {
         return btn;
     }
 
+    /**
+     * Applies global CSS styles to buttons in the scene.
+     *
+     * @param scene the scene to apply styles to
+     */
     private void applyGlobalButtonStyles(Scene scene) {
         String css = """
             .button.menu-button {
@@ -199,8 +242,11 @@ public class MainMenu extends Application {
         );
     }
 
-    // ================== Load Saved Game Dialog ==================
-
+    /**
+     * Shows a dialog for loading saved games.
+     *
+     * @param owner the owner stage for the dialog
+     */
     private void showLoadGameDialog(Stage owner) {
         Stage dialog = new Stage();
         dialog.initOwner(owner);
@@ -261,8 +307,11 @@ public class MainMenu extends Application {
         dialog.showAndWait();
     }
 
-    // ================== Match History Dialog ==================
-
+    /**
+     * Shows a dialog for viewing match history.
+     *
+     * @param owner the owner stage for the dialog
+     */
     private void showHistoryDialog(Stage owner) {
         Stage dialog = new Stage();
         dialog.initOwner(owner);
@@ -287,7 +336,7 @@ public class MainMenu extends Application {
             protected void updateItem(GameDetails item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) setText(null);
-                 else setText(item.getStartedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+                else setText(item.getStartedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
             }
         });
 
@@ -299,7 +348,6 @@ public class MainMenu extends Application {
             if (selected != null) {
                 ChessApplication chessApplication = new ChessApplication(ChessEngine.fromGameDetails(selected));
                 chessApplication.start(stage);
-
             }
             dialog.close();
         });
@@ -324,8 +372,12 @@ public class MainMenu extends Application {
         dialog.showAndWait();
     }
 
-    // ================== Helpers ==================
-
+    /**
+     * Loads saved games from the games folder.
+     *
+     * @param ended if true, loads only ended games; if false, loads only in-progress games
+     * @return a list of GameDetails objects
+     */
     private List<GameDetails> loadSavedGamesFromFolder(boolean ended) {
         List<GameDetails> result = new ArrayList<>();
 
@@ -351,6 +403,11 @@ public class MainMenu extends Application {
         return result;
     }
 
+    /**
+     * The main method that launches the JavaFX application.
+     *
+     * @param args command line arguments
+     */
     public static void main(String[] args) {
         launch(args);
     }
